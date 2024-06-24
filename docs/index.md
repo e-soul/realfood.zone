@@ -3,4 +3,9 @@ title: Welcome to the Real Food Zone!
 ---
 ## How are you doing today?
 
-See more [about](/about.html) me.
+Вижте повече [за мен](/about.html).
+
+Рецепти
+{% for post in site.posts %}
+- [{{ post.title }}]({{ post.url }}).
+{% endfor %}
