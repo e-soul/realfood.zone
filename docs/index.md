@@ -1,7 +1,7 @@
 ---
-title: Welcome to the Real Food Zone!
+title: Вкусна истинска храна!
 ---
-## How are you doing today?
+## А Вие какво ще хапвате днес?
 
 Вижте повече [за мен](/about.html).
 
