@@ -1,17 +1,23 @@
 start {{ include.images.size }}
+{% assign rrrr = include.images.size | minus: 1 %}
+start {{ rrrr }}
 <div id="carouselImageSlides" class="carousel slide">
 <div class="carousel-indicators">
+    <button type="button" data-bs-target="#carouselImageSlides" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 0"></button>
     {% assign lastIndex = 3 %}
-    {% for i in (0..lastIndex) %}
+    {% for i in (1..lastIndex) %}
     <p>IMG INDEX {{ i }}</p>
     <button type="button" data-bs-target="#carouselImageSlides" data-bs-slide-to="{{ i }}" aria-label="Slide {{ i }}"></button>
     {% endfor %}
 </div>
 <div class="carousel-inner">
-    {% for imagePath in include.images %}
+    <div class="carousel-item active">
+      <img src="{{ include.images[0] }}" class="d-block w-100" alt="Image 1">
+    </div>
+    {% for i in (1..lastIndex) %}
     <p>IMG PATH {{ imagePath }}</p>
     <div class="carousel-item">
-    <img src="{{ imagePath }}" class="d-block w-100">
+    <img src="{{ include.images[i] }}" class="d-block w-100">
     </div>
     {% endfor %}
 </div>
