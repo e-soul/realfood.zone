@@ -3,9 +3,9 @@ title: Вкусна истинска храна!
 ---
 ## А Вие какво ще хапвате днес?
 
-<div class="d-flex flex-wrap">
+<div class="d-flex flex-lg-wrap">
 {% for post in site.posts %}
-    <div class="card p-2" style="width: 18rem;">
+    <div class="card m-2" style="width: 18rem;">
         <img src="{{ post.imagePaths[0] }}" class="card-img-top">
         <div class="card-body">
             <h5 class="card-title">{{ post.title }}</h5>
