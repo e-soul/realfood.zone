@@ -3,9 +3,9 @@ title: Вкусна истинска храна!
 ---
 <h2 class="text-center">А Вие какво ще хапвате днес?</h2>
 
-<div class="container text-center">
+<div class="container">
 {% for post in site.posts %}
-    <div class="card mb-3" style="max-width: 640px;">
+    <div class="card mb-3 mx-auto" style="max-width: 640px;">
     <div class="row g-0">
         <div class="col-lg-4">
         <img src="{{ post.imagePaths[0] }}" class="img-fluid rounded">
