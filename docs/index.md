@@ -1,12 +1,16 @@
 ---
 title: Вкусна истинска храна!
 ---
-## А Вие какво ще хапвате днес?
+<div class="text-center">А Вие какво ще хапвате днес?</div>
 
 <div class="container">
 {% for post in site.posts %}
-    <div class="card m-2 mx-auto" style="width: 18rem;">
-        <img src="{{ post.imagePaths[0] }}" class="card-img-top">
+    <div class="card mb-3" style="max-width: 540px;">
+    <div class="row g-0">
+        <div class="col-md-4">
+        <img src="{{ post.imagePaths[0] }}" class="img-fluid rounded">
+        </div>
+        <div class="col-md-8">
         <div class="card-body">
             <h5 class="card-title">{{ post.title }}</h5>
 {% if post.description %}
@@ -14,6 +18,8 @@ title: Вкусна истинска храна!
 {% endif %}
             <a href="{{ post.url }}" class="card-link">Още</a>
         </div>
+        </div>
+    </div>
     </div>
 {% endfor %}
 </div>
