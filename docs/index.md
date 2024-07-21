@@ -1,6 +1,8 @@
 ---
 title: Вкусна истинска храна!
 ---
+<a href="/index.html" class="sticky-top link-primary link-offset-2">Начало</a>
+
 <h2 class="text-center">А Вие какво ще хапвате днес?</h2>
 
 <div class="container">
