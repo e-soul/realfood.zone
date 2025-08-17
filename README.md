@@ -1,2 +1,0 @@
-# realfood.zone
-## food blog
