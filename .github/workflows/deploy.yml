@@ -32,8 +32,8 @@ jobs:
 
       - name: Build Lambda & CDK jars
         run: |
-          ./gradlew --version
-          ./gradlew clean :lambda:shadowJar :cdk:shadowJar
+          gradle --version
+          gradle clean :lambda:shadowJar :cdk:shadowJar
 
       - name: Upload artifacts (optional)
         uses: actions/upload-artifact@v4
