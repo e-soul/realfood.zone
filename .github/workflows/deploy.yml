@@ -2,7 +2,7 @@ name: Build & Deploy CDK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "serverless" ]
   workflow_dispatch: {}
 
 permissions:
