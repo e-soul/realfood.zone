@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write   # required for OIDC to AWS
 
 concurrency:
   group: cdk-deploy-${{ github.ref }}
@@ -21,7 +20,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -46,10 +45,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -77,7 +75,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: CDK Bootstrap (idempotent; safe to run)
-        run: npx -y aws-cdk@2 bootstrap aws://${{ env.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }}
+        run: npx -y aws-cdk@2 bootstrap --no-telemetry aws://${{ env.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }}
 
       - name: CDK Deploy
-        run: npx -y aws-cdk@2 deploy HelloStack --require-approval never
+        run: npx -y aws-cdk@2 deploy --no-telemetry HelloStack --require-approval never

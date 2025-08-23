@@ -22,7 +22,8 @@ public class HelloHandler implements RequestHandler<APIGatewayProxyRequestEvent,
                 <title>Hello, %s!</title>
               </head>
               <body>
-                <p>Hello, %s!</p>
+                <h3>Hello, %s!</h3>
+                <p>v1</p>
               </body>
             </html>
             """.formatted(name, name);
