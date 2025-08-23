@@ -14,10 +14,21 @@ public class HelloHandler implements RequestHandler<APIGatewayProxyRequestEvent,
         if (input != null && input.getQueryStringParameters() != null) {
             name = input.getQueryStringParameters().getOrDefault("name", "world");
         }
-        String body = String.format("{\"message\":\"Hello, %s\"}", name);
+        String body = """
+            <!doctype html>
+            <html lang="en">
+              <head>
+                <meta charset="utf-8">
+                <title>Hello, %s!</title>
+              </head>
+              <body>
+                <p>Hello, %s!</p>
+              </body>
+            </html>
+            """.formatted(name, name);
         return new APIGatewayProxyResponseEvent()
                 .withStatusCode(200)
-                .withHeaders(Map.of("Content-Type", "application/json"))
+                .withHeaders(Map.of("Content-Type", "text/html; charset=utf-8"))
                 .withBody(body);
     }
 }
