@@ -74,7 +74,7 @@ jobs:
         run: npm i -g aws-cdk@^2
 
       - name: Build (ensure fresh assets)
-        run: ./gradlew :lambda:shadowJar :cdk:shadowJar
+        run: gradle :lambda:shadowJar :cdk:shadowJar
 
       - name: CDK Bootstrap (idempotent; safe to run)
         run: npx cdk bootstrap aws://${{ env.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }}
