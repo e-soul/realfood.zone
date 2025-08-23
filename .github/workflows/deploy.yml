@@ -1,0 +1,83 @@
+name: Build & Deploy CDK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write   # required for OIDC to AWS
+
+concurrency:
+  group: cdk-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Build Lambda & CDK jars
+        run: |
+          ./gradlew --version
+          ./gradlew clean :lambda:shadowJar :cdk:shadowJar
+
+      - name: Upload artifacts (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-jars
+          path: |
+            lambda/build/libs/hello-lambda.jar
+            cdk/build/libs/cdk.jar
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Set up Node.js for CDK CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install CDK CLI
+        run: npm i -g aws-cdk@^2
+
+      - name: Build (ensure fresh assets)
+        run: ./gradlew :lambda:shadowJar :cdk:shadowJar
+
+      - name: CDK Bootstrap (idempotent; safe to run)
+        run: npx cdk bootstrap aws://${{ env.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }}
+
+      - name: CDK Deploy
+        run: npx cdk deploy HelloStack --require-approval never

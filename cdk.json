@@ -1,0 +1,6 @@
+{
+  "app": "java -jar cdk/build/libs/cdk.jar",
+  "context": {
+    "@aws-cdk/core:bootstrapQualifier": "hwdemo"
+  }
+}
