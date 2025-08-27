@@ -21,6 +21,7 @@ import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.ApiGatewayDomain;
+import software.amazon.awscdk.services.logs.RetentionDays;
 
 public class HelloStack extends Stack {
     public HelloStack(final Construct scope, final String id, final StackProps props) {
@@ -45,6 +46,7 @@ public class HelloStack extends Stack {
                 .timeout(Duration.seconds(10))
                 .handler("com.example.HelloHandler::handleRequest")
                 .code(Code.fromAsset("lambda/build/libs/hello-lambda.jar"))
+                .logRetention(RetentionDays.THREE_DAYS)
                 .build();
 
         LambdaRestApi api = LambdaRestApi.Builder.create(this, "HelloApi")
