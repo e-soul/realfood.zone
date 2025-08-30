@@ -13,7 +13,8 @@ import software.amazon.awscdk.services.apigateway.DomainNameOptions;
 import software.amazon.awscdk.services.apigateway.EndpointType;
 import software.amazon.awscdk.services.apigateway.LambdaRestApi;
 import software.amazon.awscdk.services.apigateway.SecurityPolicy;
-import software.amazon.awscdk.services.certificatemanager.DnsValidatedCertificate;
+import software.amazon.awscdk.services.certificatemanager.Certificate;
+import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneProviderProps;
@@ -22,6 +23,7 @@ import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.ApiGatewayDomain;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.logs.LogRetention;
 
 public class HelloStack extends Stack {
     public HelloStack(final Construct scope, final String id, final StackProps props) {
@@ -34,9 +36,9 @@ public class HelloStack extends Stack {
                 .build());
 
         String subdomain = "beta.realfood.zone";
-        DnsValidatedCertificate cert = DnsValidatedCertificate.Builder.create(this, "BetaApiCert")
+        Certificate cert = Certificate.Builder.create(this, "BetaApiCert")
             .domainName(subdomain)
-            .hostedZone(zone)
+            .validation(CertificateValidation.fromDns(zone))
             .build();
 
         Function fn = Function.Builder.create(this, "HelloFunction")
@@ -46,8 +48,12 @@ public class HelloStack extends Stack {
                 .timeout(Duration.seconds(10))
                 .handler("com.example.HelloHandler::handleRequest")
                 .code(Code.fromAsset("lambda/build/libs/hello-lambda.jar"))
-                .logRetention(RetentionDays.THREE_DAYS)
                 .build();
+
+        LogRetention.Builder.create(this, "HelloFunctionLogRetention")
+            .logGroupName("/aws/lambda/" + fn.getFunctionName())
+            .retention(RetentionDays.THREE_DAYS)
+            .build();
 
         LambdaRestApi api = LambdaRestApi.Builder.create(this, "HelloApi")
                 .handler(fn)
