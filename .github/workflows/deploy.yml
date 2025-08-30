@@ -1,4 +1,4 @@
-name: Build & Deploy CDK
+name: Build and Deploy CDK
 
 on:
   push:
@@ -29,17 +29,17 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      - name: Build Lambda & CDK jars
+      - name: Build stack and CDK jars
         run: |
-          gradle clean :lambda:shadowJar :cdk:shadowJar
+          gradle clean :zone.realfood.backend:shadowJar :zone.realfood.cdk:shadowJar
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-jars
           path: |
-            lambda/build/libs/hello-lambda.jar
-            cdk/build/libs/cdk.jar
+            zone.realfood.backend/build/libs/zone.realfood.backend.jar
+            zone.realfood.cdk/build/libs/zone.realfood.cdk.jar
 
   deploy:
     needs: build
@@ -77,4 +77,4 @@ jobs:
         run: npx -y aws-cdk@2 bootstrap --no-telemetry aws://${{ env.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }}
 
       - name: CDK Deploy
-        run: npx -y aws-cdk@2 deploy --no-telemetry HelloStack --require-approval never
+        run: npx -y aws-cdk@2 deploy --no-telemetry Backend --require-approval never

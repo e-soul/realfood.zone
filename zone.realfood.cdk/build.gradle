@@ -4,7 +4,7 @@ plugins {
 }
 
 application {
-  mainClass = 'com.myorg.App'
+  mainClass = 'zone.realfood.Main'
 }
 
 dependencies {
@@ -13,9 +13,9 @@ dependencies {
 }
 
 tasks.shadowJar {
-  archiveFileName.set('cdk.jar')
+  archiveFileName.set('zone.realfood.cdk.jar')
   mergeServiceFiles()
-  manifest { attributes 'Main-Class': 'com.myorg.App' }
+  manifest { attributes 'Main-Class': 'zone.realfood.Main' }
 }
 
 tasks.build.dependsOn tasks.shadowJar

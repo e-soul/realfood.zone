@@ -10,7 +10,7 @@ dependencies {
 }
 
 tasks.shadowJar {
-  archiveFileName.set('hello-lambda.jar')
+  archiveFileName.set('zone.realfood.backend.jar')
   mergeServiceFiles()
 }
 

@@ -6,7 +6,7 @@ on:
       stack:
         description: 'Stack name to destroy'
         required: true
-        default: 'HelloStack'
+        default: 'Backend'
         type: string
       confirm:
         description: 'Type "DESTROY" to confirm'
@@ -40,9 +40,9 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      - name: Build Lambda & CDK jars
+      - name: Build stack and CDK jars
         run: |
-          gradle clean :lambda:shadowJar :cdk:shadowJar
+          gradle clean :zone.realfood.backend:shadowJar :zone.realfood.cdk:shadowJar
 
       - name: Set up Node.js for CDK CLI
         uses: actions/setup-node@v4
