@@ -17,7 +17,7 @@ public class Main {
 
         DnsAndCert dns = new DnsAndCert(app, "DnsAndCert", envProps);
 
-        Backend api = new Backend(app, "HelloStack", envProps, dns.getZone(), dns.getCertificate(), dns.getSubdomain());
+        Backend api = new Backend(app, "Backend", envProps, dns.getZone(), dns.getCertificate(), dns.getSubdomain());
         api.addDependency(dns);
 
         app.synth();
