@@ -15,19 +15,22 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
     if (input != null && input.getQueryStringParameters() != null) {
       name = input.getQueryStringParameters().getOrDefault("name", "world");
     }
+    String cssUrl = System.getenv("CSS_URL");
+    String cssLink = "<link rel=\"stylesheet\" href=\"" + cssUrl + "\">";
     String body = """
-        <!doctype html>
-        <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <title>Hello, %s!</title>
-          </head>
-          <body>
-            <h3>Hello, %s!</h3>
-            <p>v6</p>
-          </body>
-        </html>
-        """.formatted(name, name);
+            <!doctype html>
+            <html lang="en">
+              <head>
+                <meta charset="utf-8">
+          %s
+                <title>Hello, %s!</title>
+              </head>
+              <body>
+                <h3>Hello, %s!</h3>
+          <p>v7</p>
+              </body>
+            </html>
+        """.formatted(cssLink, name, name);
     return new APIGatewayProxyResponseEvent().withStatusCode(200).withHeaders(Map.of("Content-Type", "text/html; charset=utf-8")).withBody(body);
   }
 }

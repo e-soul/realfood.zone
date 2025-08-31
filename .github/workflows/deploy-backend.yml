@@ -1,4 +1,4 @@
-name: Build and Deploy CDK
+name: Build and Deploy Backend
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cdk-deploy-${{ github.ref }}
+  group: cdk-deploy-backend-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -30,8 +30,7 @@ jobs:
           cache: 'gradle'
 
       - name: Build stack and CDK jars
-        run: |
-          gradle clean :zone.realfood.backend:shadowJar :zone.realfood.cdk:shadowJar
+        run: gradle clean :zone.realfood.backend:shadowJar :zone.realfood.cdk:shadowJar
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

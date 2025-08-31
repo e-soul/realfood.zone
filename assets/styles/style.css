@@ -1,0 +1,14 @@
+/* Light blue background for the whole page */
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #88c0f5; /* light blue */
+  color: #222;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+h3 { margin: 1.5rem; }
+p  { margin: 1.5rem; }

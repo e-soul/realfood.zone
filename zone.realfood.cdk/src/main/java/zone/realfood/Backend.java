@@ -1,5 +1,7 @@
 package zone.realfood;
 
+import java.util.Map;
+
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
@@ -28,9 +30,17 @@ public class Backend extends Stack {
                         final String subdomain) {
                 super(scope, id, props);
 
+                // Construct the CSS URL based on the deterministic StaticContent bucket name
+                String account = Stack.of(this).getAccount();
+                String region = Stack.of(this).getRegion();
+                String staticBucketName = String.format("realfood-zone-static-%s-%s", account, region);
+                String cssUrl = String.format("https://%s.s3.%s.amazonaws.com/styles/style.css", staticBucketName, region);
+
                 Function fn = Function.Builder.create(this, "MainFunction").runtime(Runtime.JAVA_21).architecture(Architecture.X86_64).memorySize(512)
                                 .timeout(Duration.seconds(10)).handler("zone.realfood.MainHandler::handleRequest")
-                                .code(Code.fromAsset("zone.realfood.backend/build/libs/zone.realfood.backend.jar")).build();
+                                .code(Code.fromAsset("zone.realfood.backend/build/libs/zone.realfood.backend.jar"))
+                                .environment(Map.of("CSS_URL", cssUrl))
+                                .build();
 
                 LogRetention.Builder.create(this, "MainFunctionLogRetention").logGroupName("/aws/lambda/" + fn.getFunctionName())
                                 .retention(RetentionDays.THREE_DAYS).build();

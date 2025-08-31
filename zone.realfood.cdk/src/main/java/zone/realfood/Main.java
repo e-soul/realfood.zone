@@ -15,6 +15,8 @@ public class Main {
         Environment env = Environment.builder().account(account).region(region).build();
         StackProps envProps = StackProps.builder().env(env).build();
 
+        new StaticContent(app, "StaticContent", envProps);
+
         DnsAndCert dns = new DnsAndCert(app, "DnsAndCert", envProps);
 
         Backend api = new Backend(app, "Backend", envProps, dns.getZone(), dns.getCertificate(), dns.getSubdomain());
