@@ -29,8 +29,8 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      - name: Build CDK app
-        run: gradle :zone.realfood.cdk:build
+      - name: Build stack and CDK jars
+        run: gradle clean :zone.realfood.backend:shadowJar :zone.realfood.cdk:shadowJar
 
       - name: Set up Node.js for CDK CLI
         uses: actions/setup-node@v4
