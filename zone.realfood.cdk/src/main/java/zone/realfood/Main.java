@@ -19,8 +19,11 @@ public class Main {
 
         DnsAndCert dns = new DnsAndCert(app, "DnsAndCert", envProps);
 
-        Backend api = new Backend(app, "Backend", envProps, dns.getZone(), dns.getCertificate(), dns.getSubdomain());
+        UserProfile userProfile = new UserProfile(app, "UserProfile", envProps);
+
+        Backend api = new Backend(app, "Backend", envProps, dns.getZone(), dns.getCertificate(), dns.getSubdomain(), userProfile.getTable());
         api.addDependency(dns);
+        api.addDependency(userProfile);
 
         app.synth();
     }
