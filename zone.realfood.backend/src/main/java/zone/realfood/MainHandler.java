@@ -1,5 +1,7 @@
 package zone.realfood;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,7 +78,10 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
       ), output);
       body = output.toString();
     } catch (Exception e) {
-      body = "<p>Template error: " + escape(e.getMessage()) + "</p>";
+      StringWriter sw = new StringWriter();
+      PrintWriter w = new PrintWriter(sw);
+      e.printStackTrace(w);
+      body = "<pre>Template error: " + escape(sw.toString()) + "</pre>";
     }
 
     return new APIGatewayProxyResponseEvent().withStatusCode(200).withHeaders(Map.of("Content-Type", "text/html; charset=utf-8")).withBody(body);
