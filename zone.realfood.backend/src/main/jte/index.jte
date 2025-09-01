@@ -1,30 +1,25 @@
-@param String title
-@param String greeting
-@param String name
-@param String cssUrl
-@param String profile
-@param String userId
-@param String error
+@import zone.realfood.IndexModel
+@param IndexModel model
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    @if(cssUrl != null && !cssUrl.isBlank())
-      <link rel="stylesheet" href="${cssUrl}">
+    @if(model.getCssUrl() != null && !model.getCssUrl().isBlank())
+      <link rel="stylesheet" href="${model.getCssUrl()}">
     @endif
-    <title>${title}</title>
+    <title>${model.getTitle()}</title>
   </head>
   <body>
-    <h3>${greeting}, ${name}!</h3>
+    <h3>${model.getGreeting()}, ${model.getName()}!</h3>
     <section>
       <h4>UserProfile sample</h4>
-      @if(error != null && !error.isBlank())
-        <p>Error reading from DynamoDB: ${error}</p>
-      @elseif(profile == null)
-        <p>No profile found for userId '<code>${userId}</code>'.</p>
+      @if(model.getError() != null && !model.getError().isBlank())
+        <p>Error reading from DynamoDB: ${model.getError()}</p>
+      @elseif(model.getProfile() == null || model.getProfile().isBlank())
+        <p>No profile found for userId '<code>${model.getUserId()}</code>'.</p>
       @else
-        <p>No profile found for userId '<code>${userId}</code>'.</p>
+        <p>profile email ${model.getProfile()}</p>
       @endif
     </section>
   </body>

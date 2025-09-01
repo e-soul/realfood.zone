@@ -73,21 +73,19 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
     String body;
     try {
       StringOutput output = new StringOutput();
-      var bindings = Map.of(
-          "title", "Hello, " + name + "!",
-          "greeting", "Hello",
-          "name", name + "",
-          "cssUrl", cssUrl + "",
-          "profile", profileEmail + "",
-          "userId", userId + "",
-          "error", error + ""
+      IndexModel model = new IndexModel(
+          "Hello, " + name + "!",
+          "Hello",
+          name,
+          cssUrl,
+          profileEmail,
+          userId,
+          error
       );
-      if (null != templateEngine) {
-          templateEngine.render("index.jte", bindings, output);
-      }
+      templateEngine.render("index.jte", model, output);
       body = output.toString();
       if (body == null || body.isBlank()) {
-          body = "<p>Template engine not initialized</p>";
+        body = "<p>Template engine not initialized</p>";
       }
     } catch (Exception e) {
       StringWriter sw = new StringWriter();
