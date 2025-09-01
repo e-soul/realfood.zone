@@ -53,12 +53,18 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
 
     String userId = Optional.ofNullable(input).map(APIGatewayProxyRequestEvent::getQueryStringParameters).map(q -> q.get("userId")).orElse("demo-user");
     UserProfile profile = null;
+    String profileEmail = null;
     String error = null;
     if (table == null) {
       error = "No table configured.";
     } else {
       try {
         profile = table.getItem(r -> r.key(k -> k.partitionValue(userId)));
+        if (profile == null) {
+          error = "No such user: " + escape(userId);
+        } else {
+          profileEmail = profile.getEmail();
+        }
       } catch (Exception e) {
         error = e.getMessage();
       }
@@ -67,16 +73,22 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
     String body;
     try {
       StringOutput output = new StringOutput();
-      templateEngine.render("index.jte", Map.of(
+      var bindings = Map.of(
           "title", "Hello, " + name + "!",
           "greeting", "Hello",
-          "name", name,
-          "cssUrl", cssUrl,
-          "profile", profile,
-          "userId", userId,
-          "error", error
-      ), output);
+          "name", name + "",
+          "cssUrl", cssUrl + "",
+          "profile", profileEmail + "",
+          "userId", userId + "",
+          "error", error + ""
+      );
+      if (null != templateEngine) {
+          templateEngine.render("index.jte", bindings, output);
+      }
       body = output.toString();
+      if (body == null || body.isBlank()) {
+          body = "<p>Template engine not initialized</p>";
+      }
     } catch (Exception e) {
       StringWriter sw = new StringWriter();
       PrintWriter w = new PrintWriter(sw);
