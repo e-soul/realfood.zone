@@ -1,6 +1,7 @@
 plugins {
   id 'java'
   id 'com.gradleup.shadow' version "9.0.2"
+  id 'gg.jte.gradle' version '3.2.1'
 }
 
 dependencies {
@@ -10,12 +11,21 @@ dependencies {
   implementation 'software.amazon.awssdk:dynamodb'
   implementation 'software.amazon.awssdk:regions'
   implementation 'software.amazon.awssdk:dynamodb-enhanced'
+  implementation 'gg.jte:jte:3.2.1'
   testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
 }
+
+// Precompile jte templates during build, then bundle them into the fat jar
+jte { precompile() }
 
 tasks.shadowJar {
   archiveFileName.set('zone.realfood.backend.jar')
   mergeServiceFiles()
+  dependsOn tasks.precompileJte
+  from fileTree("jte-classes") {
+    include "**/*.class"
+    include "**/*.bin" // present only if binary templates enabled
+  }
 }
 
 tasks.build.dependsOn tasks.shadowJar

@@ -17,6 +17,10 @@ import software.amazon.awssdk.enhanced.dynamodb.model.PageIterable;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
+import gg.jte.ContentType;
+import gg.jte.TemplateEngine;
+import gg.jte.output.StringOutput;
+
 public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
   private static final String TABLE_ENV = "USER_PROFILE_TABLE";
@@ -26,14 +30,14 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
   private static final DynamoDbEnhancedClient enhanced = DynamoDbEnhancedClient.builder().dynamoDbClient(ddb).build();
   private static DynamoDbTable<UserProfile> table;
   private static volatile boolean seeded = false;
+  private static final TemplateEngine templateEngine = TemplateEngine.createPrecompiled(ContentType.Html);
 
   @Override
   public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent input, Context context) {
     String name = Optional.ofNullable(input).map(APIGatewayProxyRequestEvent::getQueryStringParameters).map(q -> q.getOrDefault("name", "world"))
         .orElse("world");
 
-    String cssUrl = System.getenv("CSS_URL");
-    String cssLink = "<link rel=\"stylesheet\" href=\"" + cssUrl + "\">";
+  String cssUrl = System.getenv("CSS_URL");
 
     String tableName = System.getenv(TABLE_ENV);
     if (table == null && tableName != null && !tableName.isBlank()) {
@@ -46,23 +50,34 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
     }
 
     String userId = Optional.ofNullable(input).map(APIGatewayProxyRequestEvent::getQueryStringParameters).map(q -> q.get("userId")).orElse("demo-user");
-    String profileHtml = renderProfile(userId);
+    UserProfile profile = null;
+    String error = null;
+    if (table == null) {
+      error = "No table configured.";
+    } else {
+      try {
+        profile = table.getItem(r -> r.key(k -> k.partitionValue(userId)));
+      } catch (Exception e) {
+        error = e.getMessage();
+      }
+    }
 
-    String body = """
-            <!doctype html>
-            <html lang=\"en\">\n              <head>
-                <meta charset=\"utf-8\">\n          %s
-                <title>Hello, %s!</title>
-              </head>
-              <body>
-                <h3>Hello, %s!</h3>
-                <section>
-                  <h4>UserProfile sample</h4>
-                  %s
-                </section>
-              </body>
-            </html>
-        """.formatted(cssLink, name, name, profileHtml);
+    String body;
+    try {
+      StringOutput output = new StringOutput();
+      templateEngine.render("index.jte", Map.of(
+          "title", "Hello, " + name + "!",
+          "greeting", "Hello",
+          "name", name,
+          "cssUrl", cssUrl,
+          "profile", profile,
+          "userId", userId,
+          "error", error
+      ), output);
+      body = output.toString();
+    } catch (Exception e) {
+      body = "<p>Template error: " + escape(e.getMessage()) + "</p>";
+    }
 
     return new APIGatewayProxyResponseEvent().withStatusCode(200).withHeaders(Map.of("Content-Type", "text/html; charset=utf-8")).withBody(body);
   }
@@ -96,29 +111,7 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
     }
   }
 
-  private String renderProfile(String userId) {
-    if (table == null)
-      return "<p><em>No table configured.</em></p>";
-    try {
-      UserProfile item = table.getItem(r -> r.key(k -> k.partitionValue(userId)));
-      if (item == null) {
-        return "<p>No profile found for userId '<code>" + escape(userId) + "</code>'.</p>";
-      }
-      String scopesHtml = (item.getScopes() == null || item.getScopes().isEmpty()) ? "<em>none</em>"
-          : String.join(", ", item.getScopes().stream().map(MainHandler::escape).toList());
-
-      StringBuilder sb = new StringBuilder();
-      if (item.getPictureUrl() != null && !item.getPictureUrl().isBlank()) {
-        sb.append("<img alt=\"avatar\" style=\"width:64px;height:64px;border-radius:50%\" src=\"").append(escape(item.getPictureUrl())).append("\"/>");
-      }
-      sb.append("<p><strong>Name:</strong> ").append(escape(item.getName())).append("</p>");
-      sb.append("<p><strong>Email:</strong> ").append(escape(item.getEmail())).append("</p>").append("<p><strong>Scopes:</strong> ").append(scopesHtml)
-          .append("</p>");
-      return sb.toString();
-    } catch (Exception e) {
-      return "<p>Error reading from DynamoDB: " + escape(e.getMessage()) + "</p>";
-    }
-  }
+  // renderProfile no longer used; rendering happens in the template
 
   private static String escape(String s) {
     if (s == null)
