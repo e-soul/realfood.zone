@@ -5,12 +5,11 @@ import java.util.List;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 @DynamoDbBean
 public class UserProfile {
-    private String userId;       // PK
-    private String email;        // GSI gsi_email PK
+    private String userId;
+    private String email;
     private String name;
     private String pictureUrl;
     private List<String> scopes;
@@ -20,7 +19,6 @@ public class UserProfile {
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }
 
-    @DynamoDbSecondaryPartitionKey(indexNames = {"gsi_email"})
     @DynamoDbAttribute("email")
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
