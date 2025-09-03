@@ -19,7 +19,7 @@ public class IndexPage extends BasePage {
         String name = queryParams.getOrDefault("name", "world");
         String userId = queryParams.getOrDefault("userId", "demo-user");
         UserProfile profile = userProfileTable.getItem(r -> r.key(k -> k.partitionValue(userId)));
-        IndexModel model = new IndexModel("Hello, " + name + "!", "Hello", name, cssUrl, profile.getEmail(), userId, "error");
+        IndexModel model = new IndexModel("Hello, " + name + "!", "Hello", name, cssUrl, profile.getEmail(), userId, null);
         StringOutput output = new StringOutput();
         templateEngine.render("index.jte", model, output);
         return output.toString();
