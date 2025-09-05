@@ -3,7 +3,7 @@
 @param String cssUrl
 @param String userEmail
 
-@param gg.jte.Content content =
+@param gg.jte.Content content = @`
   <div id="main-wrapper">
     <div class="container">
       <div class="row gtr-200">
@@ -22,5 +22,6 @@
       </div>
     </div>
   </div>
+`
 
-@render("layout.jte", title, staticBaseUrl, cssUrl, userEmail, content)
+@template.layout(title, staticBaseUrl, cssUrl, userEmail, content)

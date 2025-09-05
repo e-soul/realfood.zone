@@ -6,7 +6,7 @@
 @param String userId
 @param String error
 
-@param gg.jte.Content content =
+@param gg.jte.Content content = @`
   <div id="banner-wrapper">
     <div id="banner" class="box container">
       <div class="row">
@@ -44,7 +44,8 @@
       </div>
     </div>
   </div>
+`
 
 @param String staticBase = cssUrl != null ? cssUrl.replace("/styles/style.css", "") : null
 
-@render("layout.jte", title, staticBase, cssUrl, profile, content)
+@template.layout(title, staticBase, cssUrl, profile, content)
