@@ -33,10 +33,17 @@ public class IndexPage extends BasePage {
             error = e.getMessage();
         }
 
-        String email = profile != null ? profile.getEmail() : null;
-    IndexModel model = new IndexModel("Hello", "Hello", name, cssUrl, email, userId, error);
-        StringOutput output = new StringOutput();
-        templateEngine.render("index.jte", model, output);
+    String email = profile != null ? profile.getEmail() : null;
+    StringOutput output = new StringOutput();
+    java.util.HashMap<String, Object> params = new java.util.HashMap<>();
+    params.put("title", "Hello");
+    params.put("greeting", "Hello");
+    params.put("name", name);
+    params.put("cssUrl", cssUrl);
+    params.put("profile", email == null ? "" : email);
+    params.put("userId", userId == null ? "" : userId);
+    params.put("error", error == null ? "" : error);
+    templateEngine.render("index.jte", params, output);
         return output.toString();
     }
 }

@@ -1,12 +1,17 @@
-@import zone.realfood.IndexModel
-@param IndexModel model
+@param String title
+@param String greeting
+@param String name
+@param String cssUrl
+@param String profile
+@param String userId
+@param String error
 
 @param gg.jte.Content content =
   <div id="banner-wrapper">
     <div id="banner" class="box container">
       <div class="row">
         <div class="col-7 col-12-medium">
-          <h2>${model.getGreeting()} ${model.getName()}.</h2>
+          <h2>${greeting} ${name}.</h2>
           <p>Welcome to RealFood Zone.</p>
         </div>
         <div class="col-5 col-12-medium">
@@ -26,12 +31,12 @@
           <div id="content">
             <section class="last">
               <h2>UserProfile sample</h2>
-              @if(model.getError() != null && !model.getError().isBlank())
-                <p>Error reading from DynamoDB: ${model.getError()}</p>
-              @elseif(model.getProfile() == null || model.getProfile().isBlank())
+              @if(error != null && !error.isBlank())
+                <p>Error reading from DynamoDB: ${error}</p>
+              @elseif(profile == null || profile.isBlank())
                 <p>You're not logged in. No profile associated.</p>
               @else
-                <p>Profile email: ${model.getProfile()}</p>
+                <p>Profile email: ${profile}</p>
               @endif
             </section>
           </div>
@@ -40,6 +45,6 @@
     </div>
   </div>
 
-@param zone.realfood.LayoutModel layout = new zone.realfood.LayoutModel(model.getTitle(), model.getCssUrl() != null ? model.getCssUrl().replace("/styles/style.css", "") : null, model.getCssUrl(), model.getProfile())
+@param String staticBase = cssUrl != null ? cssUrl.replace("/styles/style.css", "") : null
 
-@render("layout.jte", layout, content)
+@render("layout.jte", title, staticBase, cssUrl, profile, content)

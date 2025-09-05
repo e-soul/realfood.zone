@@ -12,10 +12,13 @@ public class LoginPage extends BasePage {
 
     @Override
     public String render() {
-        // Generate a CSRF state and set cookie via handler; here just render link to /auth/google
-        LoginModel model = new LoginModel("Login", cssUrl, "/auth/google");
-        StringOutput output = new StringOutput();
-        templateEngine.render("login.jte", model, output);
+    // Generate a CSRF state and set cookie via handler; here just render link to /auth/google
+    StringOutput output = new StringOutput();
+    java.util.HashMap<String, Object> params = new java.util.HashMap<>();
+    params.put("title", "Login");
+    params.put("cssUrl", cssUrl);
+    params.put("userEmail", null);
+    templateEngine.render("login.jte", params, output);
         return output.toString();
     }
 }

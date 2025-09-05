@@ -1,5 +1,7 @@
-@import zone.realfood.LayoutModel
-@param LayoutModel layout
+@param String title
+@param String staticBaseUrl
+@param String cssUrl
+@param String userEmail
 
 @param gg.jte.Content content =
   <div id="main-wrapper">
@@ -21,4 +23,4 @@
     </div>
   </div>
 
-@render("layout.jte", layout, content)
+@render("layout.jte", title, staticBaseUrl, cssUrl, userEmail, content)

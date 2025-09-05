@@ -1,18 +1,20 @@
-@import zone.realfood.LayoutModel
-@param LayoutModel layout
+@param String title
+@param String staticBaseUrl
+@param String cssUrl
+@param String userEmail
 @param gg.jte.Content content
 
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>${layout.getTitle()}</title>
+  <title>${title}</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    @if(layout.getCssUrl() != null && !layout.getCssUrl().isBlank())
-      <link rel="stylesheet" href="${layout.getCssUrl()}">
+    @if(cssUrl != null && !cssUrl.isBlank())
+      <link rel="stylesheet" href="${cssUrl}">
     @endif
-    @if(layout.getStaticBaseUrl() != null && !layout.getStaticBaseUrl().isBlank())
-      <link rel="stylesheet" href="${layout.getStaticBaseUrl()}/assets/css/main.css" />
+    @if(staticBaseUrl != null && !staticBaseUrl.isBlank())
+      <link rel="stylesheet" href="${staticBaseUrl}/assets/css/main.css" />
     @endif
   </head>
   <body class="is-preload">
@@ -28,7 +30,7 @@
               <li><a href="/">Home</a></li>
               <li><a href="/privacy">Privacy</a></li>
               <li><a href="/terms">Terms</a></li>
-              @if(layout.getUserEmail() != null && !layout.getUserEmail().isBlank())
+              @if(userEmail != null && !userEmail.isBlank())
                 <li><a href="/logout">Logout</a></li>
               @else
                 <li><a href="/login">Login</a></li>
@@ -55,13 +57,13 @@
       </div>
     </div>
 
-    @if(layout.getStaticBaseUrl() != null && !layout.getStaticBaseUrl().isBlank())
-      <script src="${layout.getStaticBaseUrl()}/assets/js/jquery.min.js"></script>
-      <script src="${layout.getStaticBaseUrl()}/assets/js/jquery.dropotron.min.js"></script>
-      <script src="${layout.getStaticBaseUrl()}/assets/js/browser.min.js"></script>
-      <script src="${layout.getStaticBaseUrl()}/assets/js/breakpoints.min.js"></script>
-      <script src="${layout.getStaticBaseUrl()}/assets/js/util.js"></script>
-      <script src="${layout.getStaticBaseUrl()}/assets/js/main.js"></script>
+    @if(staticBaseUrl != null && !staticBaseUrl.isBlank())
+      <script src="${staticBaseUrl}/assets/js/jquery.min.js"></script>
+      <script src="${staticBaseUrl}/assets/js/jquery.dropotron.min.js"></script>
+      <script src="${staticBaseUrl}/assets/js/browser.min.js"></script>
+      <script src="${staticBaseUrl}/assets/js/breakpoints.min.js"></script>
+      <script src="${staticBaseUrl}/assets/js/util.js"></script>
+      <script src="${staticBaseUrl}/assets/js/main.js"></script>
     @endif
   </body>
 </html>

@@ -12,10 +12,14 @@ public class PrivacyPage extends BasePage {
 
     @Override
     public String render() {
-        String email = Cookies.getCookie(headers, "sid");
-        LayoutModel layout = new LayoutModel("Privacy Policy", staticBaseUrl, cssUrl, email);
-        StringOutput output = new StringOutput();
-        templateEngine.render("privacy.jte", layout, output);
+    String email = Cookies.getCookie(headers, "sid");
+    StringOutput output = new StringOutput();
+    java.util.HashMap<String, Object> params = new java.util.HashMap<>();
+    params.put("title", "Privacy Policy");
+    params.put("staticBaseUrl", staticBaseUrl);
+    params.put("cssUrl", cssUrl);
+    params.put("userEmail", email);
+    templateEngine.render("privacy.jte", params, output);
         return output.toString();
     }
 }

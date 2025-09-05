@@ -1,5 +1,6 @@
-@import zone.realfood.LoginModel
-@param LoginModel model
+@param String title
+@param String cssUrl
+@param String userEmail
 
 @param gg.jte.Content content =
   <div id="main-wrapper">
@@ -10,7 +11,7 @@
             <section class="last">
               <h2>Login</h2>
               <p>
-                <a class="button large icon brands fa-google" href="${model.getGoogleAuthPath()}">Sign in with Google</a>
+                <a class="button large icon brands fa-google" href="/auth/google">Sign in with Google</a>
               </p>
             </section>
           </div>
@@ -19,6 +20,6 @@
     </div>
   </div>
 
-@param zone.realfood.LayoutModel layout = new zone.realfood.LayoutModel(model.getTitle(), model.getCssUrl() != null ? model.getCssUrl().replace("/styles/style.css", "") : null, model.getCssUrl(), null)
+@param String staticBase = cssUrl != null ? cssUrl.replace("/styles/style.css", "") : null
 
-@render("layout.jte", layout, content)
+@render("layout.jte", title, staticBase, cssUrl, userEmail, content)
