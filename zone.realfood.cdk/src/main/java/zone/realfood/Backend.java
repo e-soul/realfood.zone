@@ -42,7 +42,10 @@ public class Backend extends Stack {
                                 .code(Code.fromAsset("zone.realfood.backend/build/libs/zone.realfood.backend.jar"))
                                 .environment(Map.of(
                                         "CSS_URL", cssUrl,
-                                        "USER_PROFILE_TABLE", userProfileTable.getTableName()
+                                        "USER_PROFILE_TABLE", userProfileTable.getTableName(),
+                                        "GOOGLE_CLIENT_ID", System.getenv().getOrDefault("GOOGLE_CLIENT_ID", ""),
+                                        "GOOGLE_CLIENT_SECRET", System.getenv().getOrDefault("GOOGLE_CLIENT_SECRET", ""),
+                                        "GOOGLE_REDIRECT_URI", System.getenv().getOrDefault("GOOGLE_REDIRECT_URI", "")
                                 ))
                                 .build();
 
