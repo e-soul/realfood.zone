@@ -34,7 +34,7 @@ public class IndexPage extends BasePage {
         }
 
         String email = profile != null ? profile.getEmail() : null;
-        IndexModel model = new IndexModel("Hello, " + name + "!", "Hello", name, cssUrl, email, userId, error);
+    IndexModel model = new IndexModel("Hello", "Hello", name, cssUrl, email, userId, error);
         StringOutput output = new StringOutput();
         templateEngine.render("index.jte", model, output);
         return output.toString();

@@ -31,17 +31,17 @@ public class Backend extends Stack {
                         final String subdomain, final ITable userProfileTable) {
                 super(scope, id, props);
 
-                // Construct the CSS URL based on the deterministic StaticContent bucket name
+                // Construct the static base URL based on the deterministic StaticContent bucket name
                 String account = Stack.of(this).getAccount();
                 String region = Stack.of(this).getRegion();
                 String staticBucketName = String.format("realfood-zone-static-%s-%s", account, region);
-                String cssUrl = String.format("https://%s.s3.%s.amazonaws.com/styles/style.css", staticBucketName, region);
+                String staticBaseUrl = String.format("https://%s.s3.%s.amazonaws.com", staticBucketName, region);
 
                 Function fn = Function.Builder.create(this, "MainFunction").runtime(Runtime.JAVA_21).architecture(Architecture.X86_64).memorySize(512)
                                 .timeout(Duration.seconds(10)).handler("zone.realfood.MainHandler::handleRequest")
                                 .code(Code.fromAsset("zone.realfood.backend/build/libs/zone.realfood.backend.jar"))
                                 .environment(Map.of(
-                                        "CSS_URL", cssUrl,
+                                        "STATIC_BASE_URL", staticBaseUrl,
                                         "USER_PROFILE_TABLE", userProfileTable.getTableName(),
                                         "GOOGLE_CLIENT_ID", System.getenv().getOrDefault("GOOGLE_CLIENT_ID", ""),
                                         "GOOGLE_CLIENT_SECRET", System.getenv().getOrDefault("GOOGLE_CLIENT_SECRET", ""),

@@ -28,8 +28,9 @@ public class StaticContent extends Stack {
                 .enforceSsl(true)
                 .build();
 
-        BucketDeployment.Builder.create(this, "DeployStaticAssets")
-                .sources(List.of(Source.asset("assets")))
+    BucketDeployment.Builder.create(this, "DeployStaticAssets")
+        // Deploy everything from the consolidated static-content folder
+        .sources(List.of(Source.asset("static-content")))
                 .destinationBucket(bucket)
                 .cacheControl(List.of(CacheControl.maxAge(Duration.days(30))))
                 .build();

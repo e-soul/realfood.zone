@@ -42,6 +42,14 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
       LoginPage page = new LoginPage(templateEngine, query, headers);
       return html(200, page.render());
     }
+    if ("/privacy".equals(path)) {
+      PrivacyPage page = new PrivacyPage(templateEngine, query, headers);
+      return html(200, page.render());
+    }
+    if ("/terms".equals(path)) {
+      TermsPage page = new TermsPage(templateEngine, query, headers);
+      return html(200, page.render());
+    }
     if ("/auth/google".equals(path)) {
       // Create state and set as cookie, then redirect to Google
       // Ensure env configuration exists
