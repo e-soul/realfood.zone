@@ -1,5 +1,5 @@
 @param String title
-@param String cssUrl
+@param String staticBaseUrl
 @param String userEmail
 
 @param gg.jte.Content content = @`
@@ -21,6 +21,4 @@
   </div>
 `
 
-@param String staticBase = cssUrl != null ? cssUrl.replace("/styles/style.css", "") : null
-
-@template.layout(title, staticBase, cssUrl, userEmail, content)
+@template.layout(title, "no-sidebar", "login", staticBaseUrl, userEmail, content)

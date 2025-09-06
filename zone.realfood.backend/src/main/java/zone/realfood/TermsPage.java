@@ -12,14 +12,11 @@ public class TermsPage extends BasePage {
 
     @Override
     public String render() {
-        String email = Cookies.getCookie(headers, "sid");
+        java.util.HashMap<String, Object> params = new java.util.HashMap<>();
+        params.put("title", "Terms of Service");
+        params.put("staticBaseUrl", staticBaseUrl);
         StringOutput output = new StringOutput();
-    java.util.HashMap<String, Object> params = new java.util.HashMap<>();
-    params.put("title", "Terms of Service");
-    params.put("staticBaseUrl", staticBaseUrl);
-    params.put("cssUrl", cssUrl);
-    params.put("userEmail", email);
-    templateEngine.render("terms.jte", params, output);
+        templateEngine.render("terms.jte", params, output);
         return output.toString();
     }
 }

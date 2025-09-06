@@ -1,7 +1,5 @@
 @param String title
 @param String staticBaseUrl
-@param String cssUrl
-@param String userEmail
 
 @param gg.jte.Content content = @`
   <div id="main-wrapper">
@@ -15,7 +13,7 @@
               <h3>Data we collect</h3>
               <p>We may store your email address after you sign in with Google to personalize your experience.</p>
               <h3>Contact</h3>
-              <p>Questions? Contact support at hello@realfood.zone.</p>
+              <p>Questions? Contact support at support AT realfood.zone.</p>
             </article>
           </div>
         </div>
@@ -24,4 +22,4 @@
   </div>
 `
 
-@template.layout(title, staticBaseUrl, cssUrl, userEmail, content)
+@template.layout(title, "no-sidebar", "privacy", staticBaseUrl, null, content)
