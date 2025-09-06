@@ -1,5 +1,8 @@
+@import zone.realfood.UserProfile
+
 @param String title
 @param String staticBaseUrl
+@param UserProfile userProfile
 @param String userEmail
 
 @param gg.jte.Content content = @`
@@ -8,8 +11,12 @@
 					<div id="banner" class="box container">
 						<div class="row">
 							<div class="col-7 col-12-medium">
-								<h2>Hi. This is Verti.</h2>
-								<p>It's a free responsive site template by HTML5 UP</p>
+							@if(userProfile != null)
+								<h2>Hi, ${userProfile.getName()}!</h2>
+							@else
+								<h2>Hi, Stranger!</h2>
+							@endif
+								<p>Your menu for today is ready, just look below.</p>
 							</div>
 							<div class="col-5 col-12-medium">
 								<ul>
@@ -29,13 +36,13 @@
 
 								<!-- Box -->
 									<section class="box feature">
-										<a href="#" class="image featured"><img src="${staticBaseUrl}/images/pic01.jpg" alt="" /></a>
+										<a href="#" class="image featured"><img src="${staticBaseUrl}/images/breakfast.png" alt="breakfast" /></a>
 										<div class="inner">
 											<header>
-												<h2>Put something here</h2>
-												<p>Maybe here as well I think</p>
+												<h2>Eggs and avocado toast</h2>
+												<p>Strong and healthy</p>
 											</header>
-											<p>Phasellus quam turpis, feugiat sit amet in, hendrerit in lectus. Praesent sed semper amet bibendum tristique fringilla.</p>
+											<p>364 calories, 18g protein, 25g carbs, 22g fat, 8g fiber</p>
 										</div>
 									</section>
 
@@ -44,13 +51,13 @@
 
 								<!-- Box -->
 									<section class="box feature">
-										<a href="#" class="image featured"><img src="${staticBaseUrl}/images/pic02.jpg" alt="" /></a>
+										<a href="#" class="image featured"><img src="${staticBaseUrl}/images/lunch.png" alt="lunch" /></a>
 										<div class="inner">
 											<header>
-												<h2>An interesting title</h2>
-												<p>This is also an interesting subtitle</p>
+												<h2>Grilled salmon, black rice and greens</h2>
+												<p>Irresistable</p>
 											</header>
-											<p>Phasellus quam turpis, feugiat sit amet in, hendrerit in lectus. Praesent sed semper amet bibendum tristique fringilla.</p>
+											<p>580 calories, 44g protein, 52g carsb, 21g fat, 4g fiber</p>
 										</div>
 									</section>
 
@@ -59,13 +66,13 @@
 
 								<!-- Box -->
 									<section class="box feature">
-										<a href="#" class="image featured"><img src="${staticBaseUrl}/images/pic03.jpg" alt="" /></a>
+										<a href="#" class="image featured"><img src="${staticBaseUrl}/images/dinner.png" alt="dinner" /></a>
 										<div class="inner">
 											<header>
-												<h2>Oh, and finally</h2>
-												<p>Here's another intriguing subtitle</p>
+												<h2>Greek salad with feta and olives</h2>
+												<p>You deserve it</p>
 											</header>
-											<p>Phasellus quam turpis, feugiat sit amet in, hendrerit in lectus. Praesent sed semper amet bibendum tristique fringilla.</p>
+											<p>449 calories, 12g protein, 19g carbs, 36g fat, 5g fiber</p>
 										</div>
 									</section>
 

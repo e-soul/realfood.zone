@@ -49,11 +49,11 @@
 									</li>
 									<li><a href="/terms">Terms of Service</a></li>
 									<li><a href="/privacy">Privacy</a></li>
-                @if(userEmail != null)
+								@if(userEmail != null)
 									<li><a href="/logout">Logout</a></li>
-                @else
-                  <li><a href="/login">Login</a></li>
-                @endif
+								@else
+									<li><a href="/login">Login</a></li>
+								@endif
 								</ul>
 							</nav>
 

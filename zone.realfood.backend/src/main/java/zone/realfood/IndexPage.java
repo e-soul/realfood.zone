@@ -1,5 +1,6 @@
 package zone.realfood;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import gg.jte.TemplateEngine;
@@ -17,19 +18,19 @@ public class IndexPage extends BasePage {
 
     public String render() {
         String sessionUserId = Cookies.getCookie(headers, "sid");
-        UserProfile profile = null;
+        UserProfile userProfile = null;
         try {
             if (sessionUserId != null && !sessionUserId.isBlank()) {
-                profile = userProfileTable.getItem(r -> r.key(k -> k.partitionValue(sessionUserId)));
+                userProfile = userProfileTable.getItem(r -> r.key(k -> k.partitionValue(sessionUserId)));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        String email = profile != null ? profile.getEmail() : null;
-        java.util.HashMap<String, Object> params = new java.util.HashMap<>();
+        Map<String, Object> params = new HashMap<>();
         params.put("title", "Hello");
-        params.put("userEmail", email);
+        params.put("userProfile", userProfile);
+        params.put("userEmail", userProfile != null ? userProfile.getEmail() : null);
         params.put("staticBaseUrl", staticBaseUrl);
         StringOutput output = new StringOutput();
         templateEngine.render("index.jte", params, output);
