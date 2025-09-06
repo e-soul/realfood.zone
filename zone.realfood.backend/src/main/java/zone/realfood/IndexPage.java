@@ -26,7 +26,7 @@ public class IndexPage extends BasePage {
             e.printStackTrace();
         }
 
-        String email = profile != null ? profile.getEmail() + " " + sessionUserId : null;
+        String email = profile != null ? profile.getEmail() : null;
         java.util.HashMap<String, Object> params = new java.util.HashMap<>();
         params.put("title", "Hello");
         params.put("userEmail", email);

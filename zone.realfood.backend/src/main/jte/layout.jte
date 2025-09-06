@@ -22,14 +22,14 @@
 
 						<!-- Logo -->
 							<div id="logo">
-								<h1><a href="index.html">Verti</a></h1>
+								<h1><a href="/">RealFood Zone</a></h1>
 								<span>by HTML5 UP</span>
 							</div>
 
 						<!-- Nav -->
 							<nav id="nav">
 								<ul>
-									<li><a href="index.html">Welcome</a></li>
+									<li><a href="/">Home</a></li>
 									<li>
 										<a href="#">Dropdown</a>
 										<ul>
@@ -47,12 +47,12 @@
 											<li><a href="#">Veroeros feugiat</a></li>
 										</ul>
 									</li>
-									<li><a href="left-sidebar.html">Left Sidebar</a></li>
-									<li><a href="right-sidebar.html">Right Sidebar</a></li>
+									<li><a href="/terms">Terms of Service</a></li>
+									<li><a href="/privacy">Privacy</a></li>
                 @if(userEmail != null)
-									<li><a href="logout">Logout</a></li>
+									<li><a href="/logout">Logout</a></li>
                 @else
-                  <li><a href="login">Login</a></li>
+                  <li><a href="/login">Login</a></li>
                 @endif
 								</ul>
 							</nav>
