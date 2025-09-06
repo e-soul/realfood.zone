@@ -29,7 +29,7 @@
 
 								<!-- Box -->
 									<section class="box feature">
-										<a href="#" class="image featured"><img src="images/pic01.jpg" alt="" /></a>
+										<a href="#" class="image featured"><img src="${staticBaseUrl}/images/pic01.jpg" alt="" /></a>
 										<div class="inner">
 											<header>
 												<h2>Put something here</h2>
@@ -44,7 +44,7 @@
 
 								<!-- Box -->
 									<section class="box feature">
-										<a href="#" class="image featured"><img src="images/pic02.jpg" alt="" /></a>
+										<a href="#" class="image featured"><img src="${staticBaseUrl}/images/pic02.jpg" alt="" /></a>
 										<div class="inner">
 											<header>
 												<h2>An interesting title</h2>
@@ -59,7 +59,7 @@
 
 								<!-- Box -->
 									<section class="box feature">
-										<a href="#" class="image featured"><img src="images/pic03.jpg" alt="" /></a>
+										<a href="#" class="image featured"><img src="${staticBaseUrl}/images/pic03.jpg" alt="" /></a>
 										<div class="inner">
 											<header>
 												<h2>Oh, and finally</h2>
@@ -86,10 +86,10 @@
 											<h3>Interesting stuff</h3>
 											<div class="grid">
 												<div class="row gtr-50">
-													<div class="col-6"><a href="#" class="image fit"><img src="images/pic04.jpg" alt="" /></a></div>
-													<div class="col-6"><a href="#" class="image fit"><img src="images/pic05.jpg" alt="" /></a></div>
-													<div class="col-6"><a href="#" class="image fit"><img src="images/pic06.jpg" alt="" /></a></div>
-													<div class="col-6"><a href="#" class="image fit"><img src="images/pic07.jpg" alt="" /></a></div>
+													<div class="col-6"><a href="#" class="image fit"><img src="${staticBaseUrl}/images/pic04.jpg" alt="" /></a></div>
+													<div class="col-6"><a href="#" class="image fit"><img src="${staticBaseUrl}/images/pic05.jpg" alt="" /></a></div>
+													<div class="col-6"><a href="#" class="image fit"><img src="${staticBaseUrl}/images/pic06.jpg" alt="" /></a></div>
+													<div class="col-6"><a href="#" class="image fit"><img src="${staticBaseUrl}/images/pic07.jpg" alt="" /></a></div>
 												</div>
 											</div>
 											<a href="#" class="button icon fa-file-alt">More</a>
