@@ -1,0 +1,10 @@
+plugins {
+    id "java"
+}
+
+dependencies {
+    implementation project(":zone.realfood.backend")
+}
+
+// TODO find a way to remove this dependency
+tasks.compileJava.dependsOn(project(":zone.realfood.backend").tasks.shadowJar)

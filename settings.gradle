@@ -1,3 +1,5 @@
 rootProject.name = "realfood.zone"
 include "zone.realfood.backend",
-        "zone.realfood.cdk"
+        "zone.realfood.backend.test",
+        "zone.realfood.cdk",
+        "zone.realfood.server"

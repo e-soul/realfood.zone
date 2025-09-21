@@ -5,10 +5,15 @@ import java.util.Arrays;
 import java.util.Map;
 
 public class Cookies {
+
     public static String getCookie(Map<String, String> headers, String name) {
-        if (headers == null) return null;
+        if (headers == null) {
+            return null;
+        }
         String cookieHeader = headers.getOrDefault("Cookie", headers.getOrDefault("cookie", null));
-        if (cookieHeader == null || cookieHeader.isBlank()) return null;
+        if (cookieHeader == null || cookieHeader.isBlank()) {
+            return null;
+        }
         String[] parts = cookieHeader.split(";\\s*");
         return Arrays.stream(parts)
                 .map(String::trim)

@@ -1,3 +1,6 @@
 .gradle
 build
 jte-classes
+dynamodb_local_latest
+shared-local-instance.db
+envvars.bat
