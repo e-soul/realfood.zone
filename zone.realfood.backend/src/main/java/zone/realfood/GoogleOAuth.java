@@ -11,21 +11,29 @@ import java.time.Duration;
 import java.util.Base64;
 
 public class GoogleOAuth {
-    private static final String AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
-    private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
-    private static final String USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
+    // Default production endpoints
+    private static final String AUTH_URL_DEFAULT = "https://accounts.google.com/o/oauth2/v2/auth";
+    private static final String TOKEN_URL_DEFAULT = "https://oauth2.googleapis.com/token";
+    private static final String USERINFO_URL_DEFAULT = "https://openidconnect.googleapis.com/v1/userinfo";
+    // System property override keys (used by unit tests to point to local server)
+    private static final String AUTH_URL_PROP = "zone.realfood.google.auth.url";
+    private static final String TOKEN_URL_PROP = "zone.realfood.google.token.url";
+    private static final String USERINFO_URL_PROP = "zone.realfood.google.userinfo.url";
+    private static final String CLIENT_ID_PROP = "zone.realfood.google.clientId";
+    private static final String CLIENT_SECRET_PROP = "zone.realfood.google.clientSecret";
+    private static final String REDIRECT_URI_PROP = "zone.realfood.google.redirectUri";
     // Minimal parsing without external libs: naive field extraction by quotes
 
     public static String getClientId() {
-        return System.getenv("GOOGLE_CLIENT_ID");
+        return System.getProperty(CLIENT_ID_PROP, System.getenv("GOOGLE_CLIENT_ID"));
     }
 
     public static String getClientSecret() {
-        return System.getenv("GOOGLE_CLIENT_SECRET");
+        return System.getProperty(CLIENT_SECRET_PROP, System.getenv("GOOGLE_CLIENT_SECRET"));
     }
 
     public static String getRedirectUri() {
-        return System.getenv("GOOGLE_REDIRECT_URI");
+        return System.getProperty(REDIRECT_URI_PROP, System.getenv("GOOGLE_REDIRECT_URI"));
     }
 
     // Minimal scopes for login: openid email (no profile unless we want picture/name)
@@ -34,7 +42,7 @@ public class GoogleOAuth {
     }
 
     public static String buildAuthorizeUrl(String state) {
-        StringBuilder sb = new StringBuilder(AUTH_URL).append("?client_id=").append(url(getClientId())).append("&response_type=code").append("&redirect_uri=")
+    StringBuilder sb = new StringBuilder(getAuthUrl()).append("?client_id=").append(url(getClientId())).append("&response_type=code").append("&redirect_uri=")
                 .append(url(getRedirectUri())).append("&scope=").append(getScope()).append("&access_type=online").append("&include_granted_scopes=false")
                 .append("&state=").append(url(state));
         return sb.toString();
@@ -45,7 +53,7 @@ public class GoogleOAuth {
                 + url(getRedirectUri()) + "&grant_type=authorization_code";
 
         HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
-        HttpRequest tokenReq = HttpRequest.newBuilder().uri(URI.create(TOKEN_URL)).timeout(Duration.ofSeconds(20))
+    HttpRequest tokenReq = HttpRequest.newBuilder().uri(URI.create(getTokenUrl())).timeout(Duration.ofSeconds(20))
                 .header("Content-Type", "application/x-www-form-urlencoded").POST(HttpRequest.BodyPublishers.ofString(form)).build();
         HttpResponse<String> tokenRes = client.send(tokenReq, HttpResponse.BodyHandlers.ofString());
         if (tokenRes.statusCode() < 200 || tokenRes.statusCode() >= 300) {
@@ -55,7 +63,7 @@ public class GoogleOAuth {
         String accessToken = extractJsonString(tokenRes.body(), "access_token");
 
         // Use OIDC userinfo with access token for email claim
-        HttpRequest userReq = HttpRequest.newBuilder().uri(URI.create(USERINFO_URL)).timeout(Duration.ofSeconds(20))
+    HttpRequest userReq = HttpRequest.newBuilder().uri(URI.create(getUserInfoUrl())).timeout(Duration.ofSeconds(20))
                 .header("Authorization", "Bearer " + accessToken).GET().build();
         HttpResponse<String> userRes = client.send(userReq, HttpResponse.BodyHandlers.ofString());
         if (userRes.statusCode() < 200 || userRes.statusCode() >= 300) {
@@ -79,6 +87,18 @@ public class GoogleOAuth {
 
     private static String url(String s) {
         return URLEncoder.encode(s, StandardCharsets.UTF_8);
+    }
+
+    private static String getAuthUrl() {
+        return System.getProperty(AUTH_URL_PROP, AUTH_URL_DEFAULT);
+    }
+
+    private static String getTokenUrl() {
+        return System.getProperty(TOKEN_URL_PROP, TOKEN_URL_DEFAULT);
+    }
+
+    private static String getUserInfoUrl() {
+        return System.getProperty(USERINFO_URL_PROP, USERINFO_URL_DEFAULT);
     }
 
     public record GoogleUser(String sub, String email, boolean emailVerified, String name, String picture, String idToken) {

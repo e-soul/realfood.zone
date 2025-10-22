@@ -155,6 +155,72 @@ public class Main {
             }
         });
 
+        // Test OAuth endpoints for unit tests to avoid external Google calls
+        // Token endpoint: expects form-encoded body with code=XYZ; returns minimal JSON with id_token & access_token
+        server.createContext("/__test/google-oauth/token", exchange -> {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                writeHtml(exchange, 405, "Method Not Allowed");
+                return;
+            }
+            String body = new String(exchange.getRequestBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            // naive parse
+            String code = null;
+            for (String part : body.split("&")) {
+                int idx = part.indexOf('=');
+                if (idx > 0) {
+                    String k = java.net.URLDecoder.decode(part.substring(0, idx), java.nio.charset.StandardCharsets.UTF_8);
+                    String v = java.net.URLDecoder.decode(part.substring(idx + 1), java.nio.charset.StandardCharsets.UTF_8);
+                    if ("code".equals(k)) code = v;
+                }
+            }
+            if (code == null || code.isBlank()) {
+                String json = "{\"error\":\"invalid_code\"}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(400, json.getBytes().length);
+                exchange.getResponseBody().write(json.getBytes());
+                exchange.close();
+                return;
+            }
+            // Build predictable tokens from code for assertions
+            String idToken = "idtoken-" + code;
+            String accessToken = "accesstoken-" + code;
+            String json = "{\"id_token\":\"" + idToken + "\",\"access_token\":\"" + accessToken + "\"}";
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            byte[] bytes = json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+
+        server.createContext("/__test/google-oauth/userinfo", exchange -> {
+            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                writeHtml(exchange, 405, "Method Not Allowed");
+                return;
+            }
+            String auth = exchange.getRequestHeaders().getFirst("Authorization");
+            if (auth == null || !auth.startsWith("Bearer accesstoken-")) {
+                String json = "{\"error\":\"invalid_token\"}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(401, json.getBytes().length);
+                exchange.getResponseBody().write(json.getBytes());
+                exchange.close();
+                return;
+            }
+            String accessToken = auth.substring("Bearer ".length());
+            String code = accessToken.replaceFirst("accesstoken-", "");
+            // Provide deterministic user info using code
+            String sub = "sub-" + code;
+            String email = code + "@example.test";
+            String name = "Test User " + code;
+            String picture = "http://localhost/pic-" + code + ".png";
+            String json = "{\"sub\":\"" + sub + "\",\"email\":\"" + email + "\",\"email_verified\":true,\"name\":\"" + name + "\",\"picture\":\"" + picture + "\"}";
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            byte[] bytes = json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+
         
 
         server.createContext("/static-content/", exchange -> {
