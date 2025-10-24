@@ -39,7 +39,7 @@ public class Backend extends Stack {
 
                 Function fn = Function.Builder.create(this, "MainFunction").runtime(Runtime.JAVA_21).architecture(Architecture.X86_64).memorySize(512)
                                 .timeout(Duration.seconds(10)).handler("zone.realfood.MainHandler::handleRequest")
-                                .code(Code.fromAsset("zone.realfood.backend/build/libs/zone.realfood.backend.jar"))
+                                .code(Code.fromAsset("zone.realfood.backend/build/libs/zone.realfood.backend-all.jar"))
                                 .environment(Map.of(
                                         "STATIC_BASE_URL", staticBaseUrl,
                                         "USER_PROFILE_TABLE", userProfileTable.getTableName(),
