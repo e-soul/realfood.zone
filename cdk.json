@@ -1,5 +1,5 @@
 {
-  "app": "java -jar zone.realfood.cdk/build/libs/zone.realfood.cdk.jar",
+  "app": "java -jar zone.realfood.cdk/build/libs/zone.realfood.cdk-all.jar",
   "context": {
     "@aws-cdk/core:bootstrapQualifier": "realfood"
   }

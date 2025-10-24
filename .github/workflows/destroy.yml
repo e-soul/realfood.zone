@@ -40,7 +40,7 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      - name: Build stack and CDK jars
+      - name: Build backend & CDK fat jars
         run: |
           gradle clean :zone.realfood.backend:shadowJar :zone.realfood.cdk:shadowJar
 

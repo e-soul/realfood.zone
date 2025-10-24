@@ -1,10 +1,6 @@
 plugins {
-  id 'application'
+  id 'java'
   id 'com.gradleup.shadow' version "9.0.2"
-}
-
-application {
-  mainClass = 'zone.realfood.Main'
 }
 
 dependencies {
@@ -13,13 +9,7 @@ dependencies {
 }
 
 tasks.shadowJar {
-  archiveFileName.set('zone.realfood.cdk.jar')
+  archiveClassifier.set('all') // produces zone.realfood.cdk-all.jar
   mergeServiceFiles()
   manifest { attributes 'Main-Class': 'zone.realfood.Main' }
 }
-
-tasks.build.dependsOn tasks.shadowJar
-tasks.distZip.dependsOn tasks.shadowJar
-tasks.distTar.dependsOn tasks.shadowJar
-tasks.startScripts.dependsOn tasks.shadowJar
-tasks.startShadowScripts.dependsOn tasks.jar

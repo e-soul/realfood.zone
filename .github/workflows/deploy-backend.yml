@@ -27,7 +27,7 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      - name: Build stack and CDK jars
+      - name: Build backend & CDK fat jars
         run: gradle clean :zone.realfood.backend:shadowJar :zone.realfood.cdk:shadowJar
 
       - name: Upload build artifacts
@@ -35,8 +35,8 @@ jobs:
         with:
           name: build-jars
           path: |
-            zone.realfood.backend/build/libs/zone.realfood.backend.jar
-            zone.realfood.cdk/build/libs/zone.realfood.cdk.jar
+            zone.realfood.backend/build/libs/zone.realfood.backend-all.jar
+            zone.realfood.cdk/build/libs/zone.realfood.cdk-all.jar
 
   deploy:
     needs: build
