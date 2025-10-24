@@ -8,7 +8,7 @@
 <!DOCTYPE HTML>
 <html>
 	<head>
-		<title>Verti by HTML5 UP</title>
+		<title>RealFood.Zone</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="${staticBaseUrl}/assets/css/main.css" />
@@ -23,7 +23,6 @@
 						<!-- Logo -->
 							<div id="logo">
 								<h1><a href="/">RealFood Zone</a></h1>
-								<span>by HTML5 UP</span>
 							</div>
 
 						<!-- Nav -->

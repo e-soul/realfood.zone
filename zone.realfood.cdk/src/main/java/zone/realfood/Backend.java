@@ -27,6 +27,8 @@ import software.constructs.Construct;
 
 public class Backend extends Stack {
 
+        private static final String SHADOW_JAR_PATH = "zone.realfood.backend/build/libs/zone.realfood.backend-all.jar";
+
         public Backend(final Construct scope, final String id, final StackProps props, final IHostedZone zone, final ICertificate certificate,
                         final String subdomain, final ITable userProfileTable) {
                 super(scope, id, props);
@@ -39,7 +41,7 @@ public class Backend extends Stack {
 
                 Function fn = Function.Builder.create(this, "MainFunction").runtime(Runtime.JAVA_21).architecture(Architecture.X86_64).memorySize(512)
                                 .timeout(Duration.seconds(10)).handler("zone.realfood.MainHandler::handleRequest")
-                                .code(Code.fromAsset("zone.realfood.backend/build/libs/zone.realfood.backend-all.jar"))
+                                .code(Code.fromAsset(SHADOW_JAR_PATH))
                                 .environment(Map.of(
                                         "STATIC_BASE_URL", staticBaseUrl,
                                         "USER_PROFILE_TABLE", userProfileTable.getTableName(),
