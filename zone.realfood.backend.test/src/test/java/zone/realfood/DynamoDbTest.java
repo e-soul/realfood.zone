@@ -7,10 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assumptions;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.URI;
 import java.util.List;
 
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -45,7 +41,7 @@ public class DynamoDbTest {
         System.setProperty("aws.secretAccessKey", "dummySecretAccessKeyForLocalDynamoDb");
         System.setProperty(DynamoDbTools.DYNAMODB_ENDPOINT_SYS_PROP, "http://localhost:5050");
 
-        Assumptions.assumeTrue(isDynamoDbLocalRunning(), () -> "Local DynamoDB must be running.");
+        Assumptions.assumeTrue(Fixtures.isDynamoDbLocalRunning(), () -> "Local DynamoDB must be running.");
     }
 
     @BeforeEach
@@ -97,16 +93,6 @@ public class DynamoDbTest {
         Assertions.assertEquals(USER_NAME, existing.getName());
         Assertions.assertEquals(USER_PIC_URL, existing.getPictureUrl());
         Assertions.assertEquals(USER_SCOPES, existing.getScopes());
-    }
-
-    private static boolean isDynamoDbLocalRunning() {
-        URI endpoint = URI.create(System.getProperty(DynamoDbTools.DYNAMODB_ENDPOINT_SYS_PROP));
-        try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(endpoint.getHost(), endpoint.getPort()), 500);
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
     }
 
     private DynamoDbTable<UserProfile> createOrGetTable() {

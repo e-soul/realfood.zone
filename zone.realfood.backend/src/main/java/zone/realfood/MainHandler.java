@@ -9,19 +9,15 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
+import zone.realfood.db.DynamoDbTools;
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 
 public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
-  private static final DynamoDbTable<UserProfile> userProfileTable = initDynamoDbUserProfileTable();
+  private static final DynamoDbTable<UserProfile> userProfileTable = DynamoDbTools.initDynamoDbUserProfileTable();
   private static final TemplateEngine templateEngine = TemplateEngine.createPrecompiled(ContentType.Html);
 
   @Override
@@ -99,13 +95,6 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
     }
 
     return html(404, "Not found");
-  }
-
-  private static DynamoDbTable<UserProfile> initDynamoDbUserProfileTable() {
-    DynamoDbClient client = DynamoDbClient.builder().region(Region.of(System.getenv().getOrDefault("AWS_REGION", System.getenv("AWS_DEFAULT_REGION"))))
-        .credentialsProvider(DefaultCredentialsProvider.create()).build();
-    DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient(client).build();
-    return enhancedClient.table(System.getenv("USER_PROFILE_TABLE"), TableSchema.fromBean(UserProfile.class));
   }
 
   private static APIGatewayProxyResponseEvent html(int status, String body) {

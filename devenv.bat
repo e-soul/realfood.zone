@@ -26,6 +26,6 @@ set GOOGLE_REDIRECT_URI=http://localhost:8050/auth/google/callback
 start "DynamoDB local" java -Djava.library.path="%SCRIPT_DIR%\dynamodb_local_latest\DynamoDBLocal_lib" -jar "%SCRIPT_DIR%\dynamodb_local_latest\DynamoDBLocal.jar" -disableTelemetry -sharedDb -port 5050
 timeout /t 2 /nobreak >nul
 
-start "HTTP server" java -cp "%SCRIPT_DIR%\zone.realfood.server\build\libs\zone.realfood.server.jar;%SCRIPT_DIR%\zone.realfood.backend\build\libs\zone.realfood.backend.jar" -Dzone.realfood.staticContentDir="%SCRIPT_DIR%\static-content" zone.realfood.Main
+start "HTTP server" java -cp "%SCRIPT_DIR%\zone.realfood.server\build\libs\zone.realfood.server.jar;%SCRIPT_DIR%\zone.realfood.backend\build\libs\zone.realfood.backend-all.jar" -Dzone.realfood.staticContentDir="%SCRIPT_DIR%\static-content" zone.realfood.Main
 
 endlocal

@@ -30,3 +30,10 @@ tasks.shadowJar {
     include "**/*.bin" // present only if binary templates enabled
   }
 }
+
+// Also include jte-classes in the regular (thin) jar so tests and dependent modules can resolve templates
+tasks.jar {
+  // Safely include precompiled templates; rely on precompileJte having run
+  dependsOn tasks.precompileJte
+  from("$projectDir/jte-classes") { include "**/*.class"; include "**/*.bin" }
+}
