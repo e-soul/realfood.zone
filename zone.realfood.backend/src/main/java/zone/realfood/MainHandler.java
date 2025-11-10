@@ -1,6 +1,8 @@
 package zone.realfood;
 
 import java.util.Map;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.time.Duration;
 
@@ -17,14 +19,31 @@ import gg.jte.TemplateEngine;
 
 public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
-  private static final DynamoDbTable<UserProfile> userProfileTable = DynamoDbTools.initDynamoDbUserProfileTable();
   private static final TemplateEngine templateEngine = TemplateEngine.createPrecompiled(ContentType.Html);
+
+  private final DynamoDbTable<UserProfile> userProfileTable;
+
+  public MainHandler() {
+    this(DynamoDbTools.initDynamoDbUserProfileTable());
+  }
+
+  public MainHandler(DynamoDbTable<UserProfile> userProfileTable) {
+    this.userProfileTable = userProfileTable;
+  }
 
   @Override
   public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent input, Context context) {
     String path = input.getPath() == null ? "/" : input.getPath();
     Map<String, String> query = input.getQueryStringParameters();
-    Map<String, String> headers = input.getHeaders();
+    Map<String, String> headers = new HashMap<>();
+    Map<String, List<String>> multiValueHeaders = input.getMultiValueHeaders();
+    if (multiValueHeaders != null) {
+      for (Map.Entry<String, List<String>> entry : multiValueHeaders.entrySet()) {
+        if (entry.getValue() != null && !entry.getValue().isEmpty()) {
+          headers.put(entry.getKey(), entry.getValue().get(0));
+        }
+      }
+    }
 
     if ("/".equals(path)) {
       IndexPage index = new IndexPage(userProfileTable, templateEngine, query, headers);
@@ -98,16 +117,15 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
   }
 
   private static APIGatewayProxyResponseEvent html(int status, String body) {
-    return new APIGatewayProxyResponseEvent().withStatusCode(status).withHeaders(Map.of("Content-Type", "text/html; charset=utf-8")).withBody(body);
+    return new APIGatewayProxyResponseEvent().withStatusCode(status).withMultiValueHeaders(Map.of("Content-Type", List.of("text/html; charset=utf-8"))).withBody(body);
   }
 
   private static APIGatewayProxyResponseEvent redirect(String location, String... cookies) {
-    APIGatewayProxyResponseEvent res = new APIGatewayProxyResponseEvent().withStatusCode(302).withHeaders(Map.of("Location", location));
+    Map<String, List<String>> headers = new HashMap<>();
+    headers.put("Location", List.of(location));
     if (cookies != null && cookies.length > 0) {
-      java.util.HashMap<String, java.util.List<String>> mv = new java.util.HashMap<>();
-      mv.put("Set-Cookie", java.util.Arrays.asList(cookies));
-      res.setMultiValueHeaders(mv);
+      headers.put("Set-Cookie", Arrays.asList(cookies));
     }
-    return res;
+    return new APIGatewayProxyResponseEvent().withStatusCode(302).withMultiValueHeaders(headers).withBody("");
   }
 }

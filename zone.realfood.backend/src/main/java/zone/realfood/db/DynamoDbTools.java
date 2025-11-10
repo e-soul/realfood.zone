@@ -18,10 +18,9 @@ public final class DynamoDbTools {
     public static final String USER_PROFILE_TABLE_NAME_DEFAULT = "UserProfile";
 
     public static DynamoDbTable<UserProfile> initDynamoDbUserProfileTable() {
-        String tableName = System.getenv().getOrDefault(USER_PROFILE_TABLE_NAME_ENV_VAR, USER_PROFILE_TABLE_NAME_DEFAULT);
         DynamoDbClient client = createDynamoDbClient();
-        DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient(client).build();
-        return enhancedClient.table(tableName, TableSchema.fromBean(UserProfile.class));
+        String tableName = getUserProfileTableName();
+        return createDynamoDbTable(client, tableName, UserProfile.class);
     }
 
     public static DynamoDbClient createDynamoDbClient() {
@@ -31,6 +30,15 @@ public final class DynamoDbTools {
             clientBuilder = clientBuilder.endpointOverride(URI.create(endpointOverride));
         }
         return clientBuilder.region(getRegion()).credentialsProvider(DefaultCredentialsProvider.create()).build();
+    }
+
+    public static String getUserProfileTableName() {
+        return System.getenv().getOrDefault(USER_PROFILE_TABLE_NAME_ENV_VAR, USER_PROFILE_TABLE_NAME_DEFAULT);
+    }
+
+    public static <T> DynamoDbTable<T> createDynamoDbTable(DynamoDbClient client, String tableName, Class<T> tableClass) {
+        DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient(client).build();
+        return enhancedClient.table(tableName, TableSchema.fromBean(tableClass));
     }
 
     private static Region getRegion() {

@@ -1,12 +1,10 @@
 package zone.realfood;
 
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.sun.net.httpserver.HttpServer;
 
-import gg.jte.ContentType;
-import gg.jte.TemplateEngine;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.BillingMode;
@@ -19,20 +17,18 @@ import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
-import java.util.Locale;
 
 import zone.realfood.db.DynamoDbTools;
 
 public class Main {
     
     public static void main(String[] args) throws Exception {
-
         String staticContentDirStr = System.getProperty("zone.realfood.staticContentDir");
         if (staticContentDirStr == null) {
             System.out.println("Set -Dzone.realfood.staticContentDir=path/to/static-content");
@@ -44,26 +40,17 @@ public class Main {
             return;
         }
 
-
         System.setProperty("aws.accessKeyId", "dummyAccessKeyIdForLocalDynamoDb");
         System.setProperty("aws.secretAccessKey", "dummySecretAccessKeyForLocalDynamoDb");
         System.setProperty(DynamoDbTools.DYNAMODB_ENDPOINT_SYS_PROP, "http://localhost:5050");
 
         DynamoDbClient client = DynamoDbTools.createDynamoDbClient();
-        try {
-            client.describeTable(b -> b.tableName(DynamoDbTools.USER_PROFILE_TABLE_NAME_DEFAULT));
-        } catch (ResourceNotFoundException ignore) {
-            CreateTableRequest.Builder req = CreateTableRequest.builder().tableName(DynamoDbTools.USER_PROFILE_TABLE_NAME_DEFAULT)
-                    .keySchema(KeySchemaElement.builder().attributeName("userId").keyType(KeyType.HASH).build())
-                    .attributeDefinitions(AttributeDefinition.builder().attributeName("userId").attributeType(ScalarAttributeType.S).build())
-                    .billingMode(BillingMode.PAY_PER_REQUEST);
-            client.createTable(req.build());
-            client.waiter().waitUntilTableExists(DescribeTableRequest.builder().tableName(DynamoDbTools.USER_PROFILE_TABLE_NAME_DEFAULT).build());
-        }
+        String tableName = DynamoDbTools.getUserProfileTableName();
 
-        DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient(client).build();
-        DynamoDbTable<UserProfile> userProfileTable = enhancedClient.table(DynamoDbTools.USER_PROFILE_TABLE_NAME_DEFAULT, TableSchema.fromBean(UserProfile.class));
-        TemplateEngine templateEngine = TemplateEngine.createPrecompiled(ContentType.Html);
+        createTable(client, tableName);
+
+        DynamoDbTable<UserProfile> userProfileTable = DynamoDbTools.createDynamoDbTable(client, tableName, UserProfile.class);
+        MainHandler handler = new MainHandler(userProfileTable);
 
         HttpServer server = HttpServer.create(new InetSocketAddress(8050), 0);
         // Dynamic routes mirroring MainHandler
@@ -74,82 +61,19 @@ public class Main {
                 if (path == null || path.isBlank()) path = "/";
 
                 Map<String, String> query = parseQuery(requestUri);
-                Map<String, String> headers = headersToSingleValueMap(exchange.getRequestHeaders());
+                Map<String, List<String>> headers = exchange.getRequestHeaders();
 
-                if ("/".equals(path)) {
-                    IndexPage indexPage = new IndexPage(userProfileTable, templateEngine, query, headers);
-                    writeHtml(exchange, 200, indexPage.render());
-                    return;
-                }
-                if ("/login".equals(path)) {
-                    String existingSid = Cookies.getCookie(headers, "sid");
-                    if (existingSid != null && !existingSid.isBlank()) {
-                        redirect(exchange, "/");
-                        return;
-                    }
-                    LoginPage page = new LoginPage(templateEngine, query, headers);
-                    writeHtml(exchange, 200, page.render());
-                    return;
-                }
-                if ("/privacy".equals(path)) {
-                    PrivacyPage page = new PrivacyPage(templateEngine, query, headers);
-                    writeHtml(exchange, 200, page.render());
-                    return;
-                }
-                if ("/terms".equals(path)) {
-                    TermsPage page = new TermsPage(templateEngine, query, headers);
-                    writeHtml(exchange, 200, page.render());
-                    return;
-                }
-                if ("/auth/google".equals(path)) {
-                    if (GoogleOAuth.getClientId() == null || GoogleOAuth.getClientSecret() == null || GoogleOAuth.getRedirectUri() == null) {
-                        writeHtml(exchange, 500, "Google OAuth is not configured.");
-                        return;
-                    }
-                    String state = GoogleOAuth.randomState();
-                    String authorizeUrl = GoogleOAuth.buildAuthorizeUrl(state);
-                    String stateCookie = Cookies.buildCookie("g_state", state, Duration.ofMinutes(10));
-                    redirect(exchange, authorizeUrl, java.util.List.of(stateCookie));
-                    return;
-                }
-                if ("/auth/google/callback".equals(path)) {
-                    String code = query.get("code");
-                    String state = query.get("state");
-                    String stateCookieVal = Cookies.getCookie(headers, "g_state");
-                    if (code == null || state == null || stateCookieVal == null || !state.equals(stateCookieVal)) {
-                        writeHtml(exchange, 400, "Invalid OAuth state");
-                        return;
-                    }
-                    try {
-                        GoogleOAuth.GoogleUser gu = GoogleOAuth.exchangeCodeForUser(code);
-                        String userId = "google:" + gu.sub();
-                        UserProfile existing = userProfileTable.getItem(r -> r.key(k -> k.partitionValue(userId)));
-                        if (existing == null) {
-                            existing = new UserProfile();
-                            existing.setUserId(userId);
-                        }
-                        existing.setEmail(gu.email());
-                        if (gu.name() != null) existing.setName(gu.name());
-                        if (gu.picture() != null) existing.setPictureUrl(gu.picture());
-                        existing.setScopes(java.util.List.of("openid", "email"));
-                        userProfileTable.putItem(existing);
+                APIGatewayProxyRequestEvent requestEvent = new APIGatewayProxyRequestEvent().withMultiValueHeaders(headers).withPath(path).withQueryStringParameters(query);
 
-                        String sidCookie = Cookies.buildCookie("sid", userId, Duration.ofDays(30));
-                        String clearState = Cookies.buildCookie("g_state", "", Duration.ZERO);
-                        redirect(exchange, "/", java.util.List.of(sidCookie, clearState));
-                        return;
-                    } catch (Exception e) {
-                        writeHtml(exchange, 500, "Login failed: " + e.getMessage());
-                        return;
-                    }
+                APIGatewayProxyResponseEvent responseEvent = handler.handleRequest(requestEvent, null);
+                
+                exchange.getResponseHeaders().putAll(responseEvent.getMultiValueHeaders());
+                byte[] body = responseEvent.getBody().getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(responseEvent.getStatusCode(), body.length);
+                if (body.length > 0) {
+                    exchange.getResponseBody().write(body);
                 }
-                if ("/logout".equals(path)) {
-                    String clearSid = Cookies.buildCookie("sid", "", Duration.ZERO);
-                    redirect(exchange, "/", java.util.List.of(clearSid));
-                    return;
-                }
-
-                writeHtml(exchange, 404, "Not found");
+                exchange.close();
             } catch (Exception e) {
                 writeHtml(exchange, 500, "Server error: " + e.getMessage());
             }
@@ -221,8 +145,6 @@ public class Main {
             exchange.close();
         });
 
-        
-
         server.createContext("/static-content/", exchange -> {
             URI requestUri = exchange.getRequestURI();
             String path = requestUri.getPath();
@@ -251,6 +173,19 @@ public class Main {
         Thread.sleep(180 * 1000);
     }
 
+    private static void createTable(DynamoDbClient client, String tableName) {
+        try {
+            client.describeTable(b -> b.tableName(tableName));
+        } catch (ResourceNotFoundException ignore) {
+            CreateTableRequest.Builder req = CreateTableRequest.builder().tableName(tableName)
+                    .keySchema(KeySchemaElement.builder().attributeName("userId").keyType(KeyType.HASH).build())
+                    .attributeDefinitions(AttributeDefinition.builder().attributeName("userId").attributeType(ScalarAttributeType.S).build())
+                    .billingMode(BillingMode.PAY_PER_REQUEST);
+            client.createTable(req.build());
+            client.waiter().waitUntilTableExists(DescribeTableRequest.builder().tableName(tableName).build());
+        }
+    }
+
     private static void writeHtml(com.sun.net.httpserver.HttpExchange exchange, int status, String body) throws java.io.IOException {
         byte[] bytes = body == null ? new byte[0] : body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
@@ -258,23 +193,6 @@ public class Main {
         if (bytes.length > 0) {
             exchange.getResponseBody().write(bytes);
         }
-        exchange.close();
-    }
-
-    private static void redirect(com.sun.net.httpserver.HttpExchange exchange, String location) throws java.io.IOException {
-        redirect(exchange, location, java.util.List.of());
-    }
-
-    private static void redirect(com.sun.net.httpserver.HttpExchange exchange, String location, java.util.List<String> setCookies) throws java.io.IOException {
-        exchange.getResponseHeaders().set("Location", location);
-        if (setCookies != null) {
-            for (String c : setCookies) {
-                if (c != null && !c.isBlank()) {
-                    exchange.getResponseHeaders().add("Set-Cookie", c);
-                }
-            }
-        }
-        exchange.sendResponseHeaders(302, -1);
         exchange.close();
     }
 
@@ -296,20 +214,5 @@ public class Main {
             } catch (Exception ignored) {}
         }
         return map;
-    }
-
-    private static Map<String, String> headersToSingleValueMap(com.sun.net.httpserver.Headers headers) {
-        Map<String, String> out = new HashMap<>();
-        for (Map.Entry<String, List<String>> e : headers.entrySet()) {
-            if (!e.getValue().isEmpty()) {
-                String first = e.getValue().get(0);
-                String key = e.getKey();
-                out.put(key, first);
-                if (key != null) {
-                    out.put(key.toLowerCase(Locale.ROOT), first);
-                }
-            }
-        }
-        return out;
     }
 }

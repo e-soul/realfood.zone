@@ -1,5 +1,6 @@
 rootProject.name = "realfood.zone"
-include "zone.realfood.backend",
+include "zone.realfood.api",
+        "zone.realfood.backend",
         "zone.realfood.backend.test",
         "zone.realfood.cdk",
         "zone.realfood.server"

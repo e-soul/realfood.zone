@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Assumptions;
@@ -51,7 +52,7 @@ public class MainHandlerTest {
 		APIGatewayProxyResponseEvent res = h.handleRequest(request("/"), TEST_CONTEXT);
 		assertEquals(200, res.getStatusCode());
 		assertTrue(res.getBody().contains("Hi, Stranger!"), "Index page should greet stranger when no session");
-		assertEquals("text/html; charset=utf-8", res.getHeaders().get("Content-Type"));
+		assertEquals("text/html; charset=utf-8", res.getMultiValueHeaders().get("Content-Type").get(0));
 	}
 
 	@Test
@@ -68,10 +69,11 @@ public class MainHandlerTest {
 	void loginRedirectsWhenSession() {
 		MainHandler h = newHandler();
 		APIGatewayProxyRequestEvent req = request("/login");
-		req.setHeaders(Map.of("Cookie", Cookies.buildCookie("sid", "user123", Duration.ofDays(30))));
+		String cookie = Cookies.buildCookie("sid", "user123", Duration.ofDays(30));
+		req.setMultiValueHeaders(Map.of("Cookie", List.of(cookie)));
 		APIGatewayProxyResponseEvent res = h.handleRequest(req, TEST_CONTEXT);
 		assertEquals(302, res.getStatusCode());
-		assertEquals("/", res.getHeaders().get("Location"));
+		assertEquals("/", res.getMultiValueHeaders().get("Location").get(0));
 	}
 
 	@Test
@@ -125,7 +127,7 @@ public class MainHandlerTest {
 		MainHandler h = newHandler();
 		APIGatewayProxyResponseEvent res = h.handleRequest(request("/auth/google"), TEST_CONTEXT);
 		assertEquals(302, res.getStatusCode());
-		String location = res.getHeaders().get("Location");
+		String location = res.getMultiValueHeaders().get("Location").get(0);
 		assertNotNull(location);
 		assertTrue(location.startsWith("https://accounts.google.com/o/oauth2"), "Should redirect to Google auth domain");
 		assertNotNull(res.getMultiValueHeaders());
