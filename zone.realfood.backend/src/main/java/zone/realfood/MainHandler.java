@@ -22,13 +22,19 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
   private static final TemplateEngine templateEngine = TemplateEngine.createPrecompiled(ContentType.Html);
 
   private final DynamoDbTable<UserProfile> userProfileTable;
+  private final GoogleOAuthService oauthService;
 
   public MainHandler() {
-    this(DynamoDbTools.initDynamoDbUserProfileTable());
+    this(DynamoDbTools.initDynamoDbUserProfileTable(), new GoogleOAuthService());
   }
 
   public MainHandler(DynamoDbTable<UserProfile> userProfileTable) {
+    this(userProfileTable, new GoogleOAuthService());
+  }
+
+  public MainHandler(DynamoDbTable<UserProfile> userProfileTable, GoogleOAuthService oauthService) {
     this.userProfileTable = userProfileTable;
+    this.oauthService = oauthService;
   }
 
   @Override
@@ -68,11 +74,11 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
     if ("/auth/google".equals(path)) {
       // Create state and set as cookie, then redirect to Google
       // Ensure env configuration exists
-      if (GoogleOAuth.getClientId() == null || GoogleOAuth.getClientSecret() == null || GoogleOAuth.getRedirectUri() == null) {
+      if (GoogleOAuthService.getClientId() == null || GoogleOAuthService.getClientSecret() == null || GoogleOAuthService.getRedirectUri() == null) {
         return html(500, "Google OAuth is not configured.");
       }
-      String state = GoogleOAuth.randomState();
-      String authorizeUrl = GoogleOAuth.buildAuthorizeUrl(state);
+      String state = GoogleOAuthService.randomState();
+      String authorizeUrl = oauthService.buildAuthorizeUrl(state);
       String stateCookie = Cookies.buildCookie("g_state", state, Duration.ofMinutes(10));
       return redirect(authorizeUrl, stateCookie);
     }
@@ -84,7 +90,7 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
         return html(400, "Invalid OAuth state");
       }
       try {
-        GoogleOAuth.GoogleUser gu = GoogleOAuth.exchangeCodeForUser(code);
+        GoogleOAuthService.GoogleUser gu = oauthService.exchangeCodeForUser(code);
         // Persist or update user profile. Use sub as userId; minimal scopes include email
         String userId = "google:" + gu.sub();
         UserProfile existing = userProfileTable.getItem(r -> r.key(k -> k.partitionValue(userId)));
@@ -97,7 +103,7 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
           existing.setName(gu.name());
         if (gu.picture() != null)
           existing.setPictureUrl(gu.picture());
-        existing.setScopes(List.of("openid", "email"));
+        existing.setScopes(List.of("openid", "email", "profile"));
         userProfileTable.putItem(existing);
 
         // Set session cookie and clear state cookie

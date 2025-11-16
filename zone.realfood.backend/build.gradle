@@ -16,6 +16,10 @@ dependencies {
   api 'software.amazon.awssdk:regions'
   api 'software.amazon.awssdk:dynamodb-enhanced'
   api 'gg.jte:jte:3.2.1'
+  
+  // Google OAuth library for secure authentication with JWT validation
+  api 'com.google.api-client:google-api-client:2.7.2'
+  
   testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
 }
 

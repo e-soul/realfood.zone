@@ -1,4 +1,5 @@
 .gradle
+bin
 build
 jte-classes
 dynamodb_local_latest
