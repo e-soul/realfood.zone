@@ -6,14 +6,6 @@ import com.sun.net.httpserver.HttpServer;
 
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
-import software.amazon.awssdk.services.dynamodb.model.BillingMode;
-import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
-import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
-import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
-import software.amazon.awssdk.services.dynamodb.model.KeyType;
-import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
-import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -27,7 +19,7 @@ import java.util.List;
 import zone.realfood.db.DynamoDbTools;
 
 public class Main {
-    
+
     public static void main(String[] args) throws Exception {
         String staticContentDirStr = System.getProperty("zone.realfood.staticContentDir");
         if (staticContentDirStr == null) {
@@ -40,16 +32,22 @@ public class Main {
             return;
         }
 
-        System.setProperty("aws.accessKeyId", "dummyAccessKeyIdForLocalDynamoDb");
-        System.setProperty("aws.secretAccessKey", "dummySecretAccessKeyForLocalDynamoDb");
-        System.setProperty(DynamoDbTools.DYNAMODB_ENDPOINT_SYS_PROP, "http://localhost:5050");
+        Fixtures.configureDynamoDbAccess();
 
         DynamoDbClient client = DynamoDbTools.createDynamoDbClient();
         String tableName = DynamoDbTools.getUserProfileTableName();
 
-        createTable(client, tableName);
+        Fixtures.createTable(client, tableName);
 
         DynamoDbTable<UserProfile> userProfileTable = DynamoDbTools.createDynamoDbTable(client, tableName, UserProfile.class);
+        userProfileTable.scan().items().forEach(item -> {
+            try {
+                userProfileTable.deleteItem(item);
+                System.out.println("Deleted: " + item);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to delete item", e);
+            }
+        });
         MainHandler handler = new MainHandler(userProfileTable);
 
         HttpServer server = HttpServer.create(new InetSocketAddress(8050), 0);
@@ -58,15 +56,22 @@ public class Main {
             try {
                 URI requestUri = exchange.getRequestURI();
                 String path = requestUri.getPath();
-                if (path == null || path.isBlank()) path = "/";
+                if (path == null || path.isBlank()) {
+                    path = "/";
+                }
 
                 Map<String, String> query = parseQuery(requestUri);
                 Map<String, List<String>> headers = exchange.getRequestHeaders();
+                
+                // Debug headers
+                System.out.println("Request: " + path);
+                headers.forEach((k, v) -> System.out.println("Header: " + k + "=" + v));
 
-                APIGatewayProxyRequestEvent requestEvent = new APIGatewayProxyRequestEvent().withMultiValueHeaders(headers).withPath(path).withQueryStringParameters(query);
+                APIGatewayProxyRequestEvent requestEvent = new APIGatewayProxyRequestEvent().withMultiValueHeaders(headers).withPath(path)
+                        .withQueryStringParameters(query);
 
                 APIGatewayProxyResponseEvent responseEvent = handler.handleRequest(requestEvent, null);
-                
+
                 exchange.getResponseHeaders().putAll(responseEvent.getMultiValueHeaders());
                 byte[] body = responseEvent.getBody().getBytes(StandardCharsets.UTF_8);
                 exchange.sendResponseHeaders(responseEvent.getStatusCode(), body.length);
@@ -107,19 +112,6 @@ public class Main {
         Thread.sleep(180 * 1000);
     }
 
-    private static void createTable(DynamoDbClient client, String tableName) {
-        try {
-            client.describeTable(b -> b.tableName(tableName));
-        } catch (ResourceNotFoundException ignore) {
-            CreateTableRequest.Builder req = CreateTableRequest.builder().tableName(tableName)
-                    .keySchema(KeySchemaElement.builder().attributeName("userId").keyType(KeyType.HASH).build())
-                    .attributeDefinitions(AttributeDefinition.builder().attributeName("userId").attributeType(ScalarAttributeType.S).build())
-                    .billingMode(BillingMode.PAY_PER_REQUEST);
-            client.createTable(req.build());
-            client.waiter().waitUntilTableExists(DescribeTableRequest.builder().tableName(tableName).build());
-        }
-    }
-
     private static void writeHtml(com.sun.net.httpserver.HttpExchange exchange, int status, String body) throws java.io.IOException {
         byte[] bytes = body == null ? new byte[0] : body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
@@ -133,7 +125,10 @@ public class Main {
     private static Map<String, String> parseQuery(URI uri) {
         Map<String, String> map = new HashMap<>();
         String raw = uri.getRawQuery();
-        if (raw == null || raw.isBlank()) return map;
+        if (raw == null || raw.isBlank()) {
+            return map;
+        }
+            
         for (String pair : raw.split("&")) {
             int idx = pair.indexOf('=');
             try {
@@ -145,7 +140,8 @@ public class Main {
                     String k = java.net.URLDecoder.decode(pair, java.nio.charset.StandardCharsets.UTF_8);
                     map.put(k, "");
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         return map;
     }

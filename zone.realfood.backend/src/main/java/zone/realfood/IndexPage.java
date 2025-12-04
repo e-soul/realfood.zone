@@ -17,12 +17,9 @@ public class IndexPage extends BasePage {
     }
 
     public String render() {
-        String sessionUserId = Cookies.getCookie(headers, "sid");
         UserProfile userProfile = null;
         try {
-            if (sessionUserId != null && !sessionUserId.isBlank()) {
-                userProfile = userProfileTable.getItem(r -> r.key(k -> k.partitionValue(sessionUserId)));
-            }
+            userProfile = SessionTools.getUserProfileFromSession(headers, userProfileTable);
         } catch (Exception e) {
             e.printStackTrace();
         }

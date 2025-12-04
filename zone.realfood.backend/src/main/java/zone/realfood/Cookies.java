@@ -15,12 +15,7 @@ public class Cookies {
             return null;
         }
         String[] parts = cookieHeader.split(";\\s*");
-        return Arrays.stream(parts)
-                .map(String::trim)
-                .filter(p -> p.startsWith(name + "="))
-                .map(p -> p.substring(name.length() + 1))
-                .findFirst()
-                .orElse(null);
+        return Arrays.stream(parts).map(String::trim).filter(p -> p.startsWith(name + "=")).map(p -> p.substring(name.length() + 1)).findFirst().orElse(null);
     }
 
     public static String buildCookie(String name, String value, Duration maxAge) {

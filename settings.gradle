@@ -3,4 +3,5 @@ include "zone.realfood.api",
         "zone.realfood.backend",
         "zone.realfood.backend.test",
         "zone.realfood.cdk",
-        "zone.realfood.server"
+        "zone.realfood.server",
+        "zone.realfood.test.tools"

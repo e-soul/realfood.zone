@@ -1,8 +1,11 @@
 package zone.realfood;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,25 +19,34 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import zone.realfood.db.DynamoDbTools;
 
 /**
- * Unit tests for {@link MainHandler}. These tests exercise routing logic and response generation.
- * They assume a local DynamoDB instance is running (same assumption strategy as {@link DynamoDbTest}).
+ * Unit tests for {@link MainHandler}. These tests exercise routing logic and response generation. They assume a local DynamoDB instance is running (same
+ * assumption strategy as {@link DynamoDbTest}).
  */
 public class MainHandlerTest {
 
 	private static final TestContext TEST_CONTEXT = new TestContext();
+	private static final String TEST_USER_ID = "test-user-123";
+	private static final String TEST_SESSION_ID = "test-session-xyz";
 
 	@BeforeAll
 	static void beforeAll() {
-		// Point DynamoDb client to local instance, set dummy credentials (used by DefaultCredentialsProvider).
-		System.setProperty("aws.accessKeyId", "dummyAccessKeyIdForLocalDynamoDb");
-		System.setProperty("aws.secretAccessKey", "dummySecretAccessKeyForLocalDynamoDb");
-		System.setProperty(DynamoDbTools.DYNAMODB_ENDPOINT_SYS_PROP, "http://localhost:5050");
-		// Provide table name env var for MainHandler's static init if needed.
-		// (Can't set environment variables easily; rely on default table name or ensure env var mapping outside.)
+		Fixtures.configureDynamoDbAccess();
+
 		Assumptions.assumeTrue(Fixtures.isDynamoDbLocalRunning(), () -> "Local DynamoDB must be running.");
+
+		// Seed a test user with valid session
+		DynamoDbTable<UserProfile> userProfileTable = DynamoDbTools.initDynamoDbUserProfileTable();
+		UserProfile testUser = new UserProfile();
+		testUser.setUserId(TEST_USER_ID);
+		testUser.setEmail("test@example.com");
+		testUser.setName("Test User");
+		testUser.setSessionId(TEST_SESSION_ID);
+		testUser.setSessionExpiresAt(Instant.now().plus(Duration.ofDays(30)));
+		userProfileTable.putItem(testUser);
 	}
 
 	private MainHandler newHandler() {
@@ -69,7 +81,8 @@ public class MainHandlerTest {
 	void loginRedirectsWhenSession() {
 		MainHandler h = newHandler();
 		APIGatewayProxyRequestEvent req = request("/login");
-		String cookie = Cookies.buildCookie("sid", "user123", Duration.ofDays(30));
+		// Use the test user seeded in beforeAll() with valid session
+		String cookie = Cookies.buildCookie("sid", TEST_USER_ID + ":" + TEST_SESSION_ID, Duration.ofDays(30));
 		req.setMultiValueHeaders(Map.of("Cookie", List.of(cookie)));
 		APIGatewayProxyResponseEvent res = h.handleRequest(req, TEST_CONTEXT);
 		assertEquals(302, res.getStatusCode());
@@ -157,21 +170,67 @@ public class MainHandlerTest {
 
 	// Minimal stub Context; expand as necessary
 	private static class TestContext implements Context {
-		@Override public String getAwsRequestId() { return "req-1"; }
-		@Override public String getLogGroupName() { return "log-group"; }
-		@Override public String getLogStreamName() { return "log-stream"; }
-		@Override public String getFunctionName() { return "function"; }
-		@Override public String getFunctionVersion() { return "1"; }
-		@Override public String getInvokedFunctionArn() { return "arn:aws:lambda:eu-central-1:123:function:function"; }
-		@Override public com.amazonaws.services.lambda.runtime.CognitoIdentity getIdentity() { return null; }
-		@Override public com.amazonaws.services.lambda.runtime.ClientContext getClientContext() { return null; }
-		@Override public int getRemainingTimeInMillis() { return 30000; }
-		@Override public int getMemoryLimitInMB() { return 512; }
-		@Override public com.amazonaws.services.lambda.runtime.LambdaLogger getLogger() { 
+		@Override
+		public String getAwsRequestId() {
+			return "req-1";
+		}
+
+		@Override
+		public String getLogGroupName() {
+			return "log-group";
+		}
+
+		@Override
+		public String getLogStreamName() {
+			return "log-stream";
+		}
+
+		@Override
+		public String getFunctionName() {
+			return "function";
+		}
+
+		@Override
+		public String getFunctionVersion() {
+			return "1";
+		}
+
+		@Override
+		public String getInvokedFunctionArn() {
+			return "arn:aws:lambda:eu-central-1:123:function:function";
+		}
+
+		@Override
+		public com.amazonaws.services.lambda.runtime.CognitoIdentity getIdentity() {
+			return null;
+		}
+
+		@Override
+		public com.amazonaws.services.lambda.runtime.ClientContext getClientContext() {
+			return null;
+		}
+
+		@Override
+		public int getRemainingTimeInMillis() {
+			return 30000;
+		}
+
+		@Override
+		public int getMemoryLimitInMB() {
+			return 512;
+		}
+
+		@Override
+		public com.amazonaws.services.lambda.runtime.LambdaLogger getLogger() {
 			return new com.amazonaws.services.lambda.runtime.LambdaLogger() {
-				@Override public void log(String message) { /* no-op */ }
-				@Override public void log(byte[] message) { /* no-op */ }
-			}; 
+				@Override
+				public void log(String message) {
+					/* no-op */ }
+
+				@Override
+				public void log(byte[] message) {
+					/* no-op */ }
+			};
 		}
 	}
 }

@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     implementation project(":zone.realfood.backend")
+    implementation project(":zone.realfood.test.tools")
 }

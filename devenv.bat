@@ -23,9 +23,12 @@ if not defined GOOGLE_CLIENT_SECRET (
 set STATIC_BASE_URL=http://localhost:8050/static-content
 set GOOGLE_REDIRECT_URI=http://localhost:8050/auth/google/callback
 
-start "DynamoDB local" java -Djava.library.path="%SCRIPT_DIR%\dynamodb_local_latest\DynamoDBLocal_lib" -jar "%SCRIPT_DIR%\dynamodb_local_latest\DynamoDBLocal.jar" -disableTelemetry -sharedDb -port 5050
-timeout /t 2 /nobreak >nul
+set JAVA_DEBUG_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:8000
+set JAVA_HTTP_CLASSPATH="%SCRIPT_DIR%\zone.realfood.server\build\libs\zone.realfood.server.jar;%SCRIPT_DIR%\zone.realfood.backend\build\libs\zone.realfood.backend-all.jar;%SCRIPT_DIR%\zone.realfood.test.tools\build\libs\zone.realfood.test.tools.jar"
 
-start "HTTP server" java -cp "%SCRIPT_DIR%\zone.realfood.server\build\libs\zone.realfood.server.jar;%SCRIPT_DIR%\zone.realfood.backend\build\libs\zone.realfood.backend-all.jar" -Dzone.realfood.staticContentDir="%SCRIPT_DIR%\static-content" zone.realfood.Main
+start "DynamoDB local" java -Djava.library.path="%SCRIPT_DIR%\dynamodb_local_latest\DynamoDBLocal_lib" -jar "%SCRIPT_DIR%\dynamodb_local_latest\DynamoDBLocal.jar" -disableTelemetry -sharedDb -port 5050
+timeout /t 8 /nobreak >nul
+
+start "HTTP server" java %JAVA_DEBUG_OPTS% -cp %JAVA_HTTP_CLASSPATH% -Dzone.realfood.staticContentDir="%SCRIPT_DIR%\static-content" zone.realfood.Main
 
 endlocal

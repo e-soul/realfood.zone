@@ -7,17 +7,14 @@ repositories {
 }
 
 dependencies {
-
-  implementation platform('software.amazon.awssdk:bom:2.25.66')
-  implementation 'software.amazon.awssdk:dynamodb'
-  implementation 'software.amazon.awssdk:regions'
-  implementation 'software.amazon.awssdk:dynamodb-enhanced'
-
+    implementation platform('software.amazon.awssdk:bom:2.25.66')
+    implementation 'software.amazon.awssdk:dynamodb'
+    implementation 'software.amazon.awssdk:regions'
+    implementation 'software.amazon.awssdk:dynamodb-enhanced'
 
     testImplementation project(":zone.realfood.backend")
-
+    testImplementation project(":zone.realfood.test.tools")
     testImplementation "org.junit.jupiter:junit-jupiter:${junitJupiterVersion}"
-
     testRuntimeOnly "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
 }
 
