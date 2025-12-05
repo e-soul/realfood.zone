@@ -15,6 +15,8 @@ public class PrivacyPage extends BasePage {
         java.util.HashMap<String, Object> params = new java.util.HashMap<>();
         params.put("title", "Privacy Policy");
         params.put("staticBaseUrl", staticBaseUrl);
+        params.put("userEmail", null);
+        params.put("csrfToken", null);
         StringOutput output = new StringOutput();
         templateEngine.render("privacy.jte", params, output);
         return output.toString();

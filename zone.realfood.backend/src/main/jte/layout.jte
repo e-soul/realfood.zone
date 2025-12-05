@@ -3,6 +3,7 @@
 @param String currentPage
 @param String staticBaseUrl
 @param String userEmail
+@param String csrfToken
 @param gg.jte.Content content
 
 <!DOCTYPE HTML>

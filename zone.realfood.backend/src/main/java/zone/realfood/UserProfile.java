@@ -16,6 +16,7 @@ public class UserProfile {
     private List<String> scopes;
     private String sessionId;
     private Instant sessionExpiresAt;
+    private String csrfToken;
 
     @DynamoDbPartitionKey
     @DynamoDbAttribute("userId")
@@ -79,6 +80,15 @@ public class UserProfile {
 
     public void setSessionExpiresAt(Instant sessionExpiresAt) {
         this.sessionExpiresAt = sessionExpiresAt;
+    }
+
+    @DynamoDbAttribute("csrfToken")
+    public String getCsrfToken() {
+        return csrfToken;
+    }
+
+    public void setCsrfToken(String csrfToken) {
+        this.csrfToken = csrfToken;
     }
 
     @Override

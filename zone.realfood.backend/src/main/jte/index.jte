@@ -4,6 +4,7 @@
 @param String staticBaseUrl
 @param UserProfile userProfile
 @param String userEmail
+@param String csrfToken
 
 @param gg.jte.Content content = @`
 			<!-- Banner -->
@@ -123,4 +124,4 @@
 				</div>
 `
 
-@template.layout(title, "homepage", "index", staticBaseUrl, userEmail, content)
+@template.layout(title, "homepage", "index", staticBaseUrl, userEmail, csrfToken, content)

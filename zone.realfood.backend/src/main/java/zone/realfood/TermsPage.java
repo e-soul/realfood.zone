@@ -15,6 +15,8 @@ public class TermsPage extends BasePage {
         java.util.HashMap<String, Object> params = new java.util.HashMap<>();
         params.put("title", "Terms of Service");
         params.put("staticBaseUrl", staticBaseUrl);
+        params.put("userEmail", null);
+        params.put("csrfToken", null);
         StringOutput output = new StringOutput();
         templateEngine.render("terms.jte", params, output);
         return output.toString();

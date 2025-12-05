@@ -1,5 +1,6 @@
 package zone.realfood;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent input, Context context) {
         String path = input.getPath() == null ? "/" : input.getPath();
+        String method = input.getHttpMethod() == null ? "GET" : input.getHttpMethod().toUpperCase();
         Map<String, String> query = input.getQueryStringParameters();
         Map<String, String> headers = new HashMap<>();
         Map<String, List<String>> multiValueHeaders = input.getMultiValueHeaders();
@@ -114,9 +116,26 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
             }
         }
         if ("/logout".equals(path)) {
-            SessionTools.invalidateSession(headers, userProfileTable);
-            String clearSid = Cookies.buildCookie("sid", "", Duration.ZERO);
-            return redirect("/", clearSid);
+            UserProfile userProfile = SessionTools.getUserProfileFromSession(headers, userProfileTable);
+            if ("POST".equals(method)) {
+                if (userProfile == null) {
+                    return redirect("/");
+                }
+                Map<String, String> formParams = parseForm(input.getBody());
+                String csrfToken = formParams.get("csrfToken");
+                String expected = userProfile.getCsrfToken();
+                if (csrfToken == null || expected == null || !expected.equals(csrfToken)) {
+                    return html(400, "Invalid CSRF token");
+                }
+                SessionTools.invalidateSession(headers, userProfileTable);
+                String clearSid = Cookies.buildCookie("sid", "", Duration.ZERO);
+                return redirect("/", clearSid);
+            }
+            if (userProfile == null) {
+                return redirect("/login");
+            }
+            LogoutPage logoutPage = new LogoutPage(templateEngine, query, headers, userProfileTable, userProfile);
+            return html(200, logoutPage.render());
         }
 
         return html(404, "Not found");
@@ -134,5 +153,30 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
             headers.put("Set-Cookie", Arrays.asList(cookies));
         }
         return new APIGatewayProxyResponseEvent().withStatusCode(302).withMultiValueHeaders(headers).withBody("");
+    }
+
+    private static Map<String, String> parseForm(String body) {
+        Map<String, String> params = new HashMap<>();
+        if (body == null || body.isBlank()) {
+            return params;
+        }
+        for (String pair : body.split("&")) {
+            int idx = pair.indexOf('=');
+            String key;
+            String value = "";
+            if (idx >= 0) {
+                key = pair.substring(0, idx);
+                value = pair.substring(idx + 1);
+            } else {
+                key = pair;
+            }
+            try {
+                key = java.net.URLDecoder.decode(key, StandardCharsets.UTF_8);
+                value = java.net.URLDecoder.decode(value, StandardCharsets.UTF_8);
+            } catch (Exception ignored) {
+            }
+            params.put(key, value);
+        }
+        return params;
     }
 }

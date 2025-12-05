@@ -1,5 +1,7 @@
 @param String title
 @param String staticBaseUrl
+@param String userEmail
+@param String csrfToken
 
 @param gg.jte.Content content = @`
   <div id="main-wrapper">
@@ -22,4 +24,4 @@
   </div>
 `
 
-@template.layout(title, "no-sidebar", "privacy", staticBaseUrl, null, content)
+@template.layout(title, "no-sidebar", "privacy", staticBaseUrl, userEmail, csrfToken, content)

@@ -1,21 +1,20 @@
 package zone.realfood;
 
-import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.sun.net.httpserver.HttpServer;
-
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.sun.net.httpserver.HttpServer;
+
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import zone.realfood.db.DynamoDbTools;
 
 public class Main {
@@ -59,16 +58,20 @@ public class Main {
                 if (path == null || path.isBlank()) {
                     path = "/";
                 }
+                String method = exchange.getRequestMethod();
 
                 Map<String, String> query = parseQuery(requestUri);
                 Map<String, List<String>> headers = exchange.getRequestHeaders();
-                
+
                 // Debug headers
                 System.out.println("Request: " + path);
                 headers.forEach((k, v) -> System.out.println("Header: " + k + "=" + v));
 
-                APIGatewayProxyRequestEvent requestEvent = new APIGatewayProxyRequestEvent().withMultiValueHeaders(headers).withPath(path)
-                        .withQueryStringParameters(query);
+                byte[] requestBodyBytes = exchange.getRequestBody().readAllBytes();
+                String requestBody = requestBodyBytes.length == 0 ? null : new String(requestBodyBytes, StandardCharsets.UTF_8);
+
+                APIGatewayProxyRequestEvent requestEvent = new APIGatewayProxyRequestEvent().withHttpMethod(method).withBody(requestBody)
+                        .withMultiValueHeaders(headers).withPath(path).withQueryStringParameters(query);
 
                 APIGatewayProxyResponseEvent responseEvent = handler.handleRequest(requestEvent, null);
 
@@ -128,7 +131,7 @@ public class Main {
         if (raw == null || raw.isBlank()) {
             return map;
         }
-            
+
         for (String pair : raw.split("&")) {
             int idx = pair.indexOf('=');
             try {

@@ -16,6 +16,7 @@ public class LoginPage extends BasePage {
         params.put("title", "Login");
         params.put("staticBaseUrl", staticBaseUrl);
         params.put("userEmail", null);
+        params.put("csrfToken", null);
         StringOutput output = new StringOutput();
         templateEngine.render("login.jte", params, output);
         return output.toString();

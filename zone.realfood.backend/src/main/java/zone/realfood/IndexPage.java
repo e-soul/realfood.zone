@@ -24,10 +24,16 @@ public class IndexPage extends BasePage {
             e.printStackTrace();
         }
 
+        String csrfToken = null;
+        if (userProfile != null) {
+            csrfToken = SessionTools.ensureCsrfToken(userProfile, userProfileTable);
+        }
+
         Map<String, Object> params = new HashMap<>();
         params.put("title", "Hello");
         params.put("userProfile", userProfile);
         params.put("userEmail", userProfile != null ? userProfile.getEmail() : null);
+        params.put("csrfToken", csrfToken);
         params.put("staticBaseUrl", staticBaseUrl);
         StringOutput output = new StringOutput();
         templateEngine.render("index.jte", params, output);

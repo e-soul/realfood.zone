@@ -27,6 +27,7 @@ public class SessionTools {
             boolean sessionMatches = sessionId.equals(userProfile.getSessionId());
             boolean notExpired = userProfile.getSessionExpiresAt() != null && userProfile.getSessionExpiresAt().isAfter(Instant.now());
             if (sessionMatches && notExpired) {
+                ensureCsrfToken(userProfile, userProfileTable);
                 return userProfile;
             }
         }
@@ -37,6 +38,7 @@ public class SessionTools {
         String sessionId = generateSessionId();
         userProfile.setSessionId(sessionId);
         userProfile.setSessionExpiresAt(Instant.now().plus(Duration.ofDays(30)));
+        userProfile.setCsrfToken(generateCsrfToken());
         userProfileTable.putItem(userProfile);
         return Cookies.buildCookie("sid", userProfile.getUserId() + ":" + sessionId, Duration.ofDays(30));
     }
@@ -54,15 +56,31 @@ public class SessionTools {
                 if (profile != null && sessionId.equals(profile.getSessionId())) {
                     profile.setSessionId(null);
                     profile.setSessionExpiresAt(null);
+                    profile.setCsrfToken(null);
                     userProfileTable.putItem(profile);
                 }
             }
         }
     }
 
+    public static String ensureCsrfToken(UserProfile userProfile, DynamoDbTable<UserProfile> userProfileTable) {
+        if (userProfile == null) {
+            return null;
+        }
+        if (userProfile.getCsrfToken() == null || userProfile.getCsrfToken().isBlank()) {
+            userProfile.setCsrfToken(generateCsrfToken());
+            userProfileTable.putItem(userProfile);
+        }
+        return userProfile.getCsrfToken();
+    }
+
     private static String generateSessionId() {
         byte[] bytes = new byte[32];
         new SecureRandom().nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private static String generateCsrfToken() {
+        return generateSessionId();
     }
 }
