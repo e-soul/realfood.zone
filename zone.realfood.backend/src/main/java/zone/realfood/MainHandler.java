@@ -125,7 +125,7 @@ public class MainHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGat
                 if (userProfile == null) {
                     return redirect("/");
                 }
-                Map<String, String> formParams = parseForm(input.getBody());
+                Map<String, String> formParams = parseForm(input.getBody(), Boolean.TRUE.equals(input.getIsBase64Encoded()));
                 String csrfToken = formParams.get("csrfToken");
                 String expected = userProfile.getCsrfToken();
                 if (csrfToken == null || expected == null || !expected.equals(csrfToken)) {
@@ -158,12 +158,16 @@ public class MainHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGat
                 .build();
     }
 
-    private static Map<String, String> parseForm(String body) {
+    private static Map<String, String> parseForm(String body, boolean isBase64Encoded) {
         Map<String, String> params = new HashMap<>();
         if (body == null || body.isBlank()) {
             return params;
         }
-        for (String pair : body.split("&")) {
+        // HTTP API v2 base64-encodes non-JSON bodies (like form submissions)
+        String decodedBody = isBase64Encoded 
+                ? new String(java.util.Base64.getDecoder().decode(body), StandardCharsets.UTF_8)
+                : body;
+        for (String pair : decodedBody.split("&")) {
             int idx = pair.indexOf('=');
             String key;
             String value = "";
