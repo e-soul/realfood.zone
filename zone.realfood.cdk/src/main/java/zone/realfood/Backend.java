@@ -1,28 +1,33 @@
 package zone.realfood;
 
+import java.util.List;
 import java.util.Map;
 
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.apigateway.DomainNameOptions;
-import software.amazon.awscdk.services.apigateway.EndpointType;
-import software.amazon.awscdk.services.apigateway.LambdaRestApi;
-import software.amazon.awscdk.services.apigateway.SecurityPolicy;
+import software.amazon.awscdk.services.apigatewayv2.CfnApi;
+import software.amazon.awscdk.services.apigatewayv2.CfnApiMapping;
+import software.amazon.awscdk.services.apigatewayv2.CfnDomainName;
+import software.amazon.awscdk.services.apigatewayv2.CfnIntegration;
+import software.amazon.awscdk.services.apigatewayv2.CfnRoute;
+import software.amazon.awscdk.services.apigatewayv2.CfnStage;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.LogRetention;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
-import software.amazon.awscdk.services.route53.targets.ApiGatewayDomain;
+import software.amazon.awscdk.services.route53.targets.ApiGatewayv2DomainProperties;
 import software.constructs.Construct;
 
 public class Backend extends Stack {
@@ -57,18 +62,48 @@ public class Backend extends Stack {
                 LogRetention.Builder.create(this, "MainFunctionLogRetention").logGroupName("/aws/lambda/" + fn.getFunctionName())
                                 .retention(RetentionDays.THREE_DAYS).build();
 
-                LambdaRestApi api = LambdaRestApi.Builder
-                                .create(this, "MainApi").handler(fn).proxy(true).domainName(DomainNameOptions.builder().domainName(subdomain)
-                                                .certificate(certificate).endpointType(EndpointType.REGIONAL).securityPolicy(SecurityPolicy.TLS_1_2).build())
+                String integrationUri = String.format("arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations", region,
+                                fn.getFunctionArn());
+
+                CfnApi httpApi = CfnApi.Builder.create(this, "MainApi").name("MainApi").protocolType("HTTP").build();
+
+                CfnIntegration integration = CfnIntegration.Builder.create(this, "MainIntegration").apiId(httpApi.getAttrApiId())
+                                .integrationType("AWS_PROXY").integrationMethod("POST").integrationUri(integrationUri)
+                                .payloadFormatVersion("2.0").build();
+
+                CfnRoute.Builder.create(this, "DefaultRoute").apiId(httpApi.getAttrApiId()).routeKey("$default")
+                                .target("integrations/" + integration.getRef()).build();
+
+                CfnStage.Builder.create(this, "DefaultStage").apiId(httpApi.getAttrApiId()).stageName("$default").autoDeploy(true)
                                 .build();
 
+                fn.addPermission("HttpApiInvokePermission",
+                                Permission.builder().principal(new ServicePrincipal("apigateway.amazonaws.com")).sourceArn(
+                                                String.format("arn:aws:execute-api:%s:%s:%s/*/*/*", region, account, httpApi.getAttrApiId()))
+                                                .build());
+
+                CfnDomainName domainName = CfnDomainName.Builder.create(this, "MainApiDomain").domainName(subdomain)
+                                .domainNameConfigurations(List.of(CfnDomainName.DomainNameConfigurationProperty.builder()
+                                                .certificateArn(certificate.getCertificateArn()).endpointType("REGIONAL")
+                                                .securityPolicy("TLS_1_2").build()))
+                                .build();
+
+                CfnApiMapping apiMapping = CfnApiMapping.Builder.create(this, "DefaultMapping").apiId(httpApi.getAttrApiId()).domainName(subdomain)
+                                .stage("$default").build();
+                apiMapping.addDependency(domainName);
+
                 ARecord.Builder.create(this, "BetaApiAliasA").zone(zone).recordName("beta")
-                                .target(RecordTarget.fromAlias(new ApiGatewayDomain(api.getDomainName()))).build();
+                                .target(RecordTarget.fromAlias(new ApiGatewayv2DomainProperties(domainName.getAttrRegionalDomainName(),
+                                                domainName.getAttrRegionalHostedZoneId())))
+                                .build();
 
                 AaaaRecord.Builder.create(this, "BetaApiAliasAAAA").zone(zone).recordName("beta")
-                                .target(RecordTarget.fromAlias(new ApiGatewayDomain(api.getDomainName()))).build();
+                                .target(RecordTarget.fromAlias(new ApiGatewayv2DomainProperties(domainName.getAttrRegionalDomainName(),
+                                                domainName.getAttrRegionalHostedZoneId())))
+                                .build();
 
-                CfnOutput.Builder.create(this, "ApiInvokeUrl").value(api.getUrl()).description("Default execute-api URL (for reference)").build();
+                CfnOutput.Builder.create(this, "ApiInvokeUrl").value(httpApi.getAttrApiEndpoint())
+                                .description("Default execute-api URL (HTTP API v2)").build();
 
                 CfnOutput.Builder.create(this, "CustomDomainUrl").value("https://" + subdomain + "/")
                                 .description("Custom domain for the API (REGIONAL, root path)").build();

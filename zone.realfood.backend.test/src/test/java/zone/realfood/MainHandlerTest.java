@@ -16,8 +16,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent.RequestContext;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent.RequestContext.Http;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import zone.realfood.db.DynamoDbTools;
@@ -53,25 +55,33 @@ public class MainHandlerTest {
 		return new MainHandler();
 	}
 
-	private APIGatewayProxyRequestEvent request(String path) {
-		return new APIGatewayProxyRequestEvent().withPath(path);
+	private APIGatewayV2HTTPEvent request(String path) {
+		APIGatewayV2HTTPEvent event = new APIGatewayV2HTTPEvent();
+		event.setRawPath(path);
+		RequestContext rc = new RequestContext();
+		Http http = new Http();
+		http.setMethod("GET");
+		http.setPath(path);
+		rc.setHttp(http);
+		event.setRequestContext(rc);
+		return event;
 	}
 
 	@Test
 	@DisplayName("GET / returns index page HTML")
 	void rootPathReturnsIndex() {
 		MainHandler h = newHandler();
-		APIGatewayProxyResponseEvent res = h.handleRequest(request("/"), TEST_CONTEXT);
+		APIGatewayV2HTTPResponse res = h.handleRequest(request("/"), TEST_CONTEXT);
 		assertEquals(200, res.getStatusCode());
 		assertTrue(res.getBody().contains("Hi, Stranger!"), "Index page should greet stranger when no session");
-		assertEquals("text/html; charset=utf-8", res.getMultiValueHeaders().get("Content-Type").get(0));
+		assertEquals("text/html; charset=utf-8", res.getHeaders().get("Content-Type"));
 	}
 
 	@Test
 	@DisplayName("GET /login returns login page when no sid cookie")
 	void loginPageWithoutSession() {
 		MainHandler h = newHandler();
-		APIGatewayProxyResponseEvent res = h.handleRequest(request("/login"), TEST_CONTEXT);
+		APIGatewayV2HTTPResponse res = h.handleRequest(request("/login"), TEST_CONTEXT);
 		assertEquals(200, res.getStatusCode());
 		assertTrue(res.getBody().contains("Sign in with Google"));
 	}
@@ -80,20 +90,20 @@ public class MainHandlerTest {
 	@DisplayName("GET /login redirects to / when sid cookie present")
 	void loginRedirectsWhenSession() {
 		MainHandler h = newHandler();
-		APIGatewayProxyRequestEvent req = request("/login");
+		APIGatewayV2HTTPEvent req = request("/login");
 		// Use the test user seeded in beforeAll() with valid session
 		String cookie = Cookies.buildCookie("sid", TEST_USER_ID + ":" + TEST_SESSION_ID, Duration.ofDays(30));
-		req.setMultiValueHeaders(Map.of("Cookie", List.of(cookie)));
-		APIGatewayProxyResponseEvent res = h.handleRequest(req, TEST_CONTEXT);
+		req.setCookies(List.of(cookie));
+		APIGatewayV2HTTPResponse res = h.handleRequest(req, TEST_CONTEXT);
 		assertEquals(302, res.getStatusCode());
-		assertEquals("/", res.getMultiValueHeaders().get("Location").get(0));
+		assertEquals("/", res.getHeaders().get("Location"));
 	}
 
 	@Test
 	@DisplayName("GET /privacy returns privacy policy page")
 	void privacyPage() {
 		MainHandler h = newHandler();
-		APIGatewayProxyResponseEvent res = h.handleRequest(request("/privacy"), TEST_CONTEXT);
+		APIGatewayV2HTTPResponse res = h.handleRequest(request("/privacy"), TEST_CONTEXT);
 		assertEquals(200, res.getStatusCode());
 		assertTrue(res.getBody().contains("Privacy Policy"));
 	}
@@ -102,7 +112,7 @@ public class MainHandlerTest {
 	@DisplayName("GET /terms returns terms page")
 	void termsPage() {
 		MainHandler h = newHandler();
-		APIGatewayProxyResponseEvent res = h.handleRequest(request("/terms"), TEST_CONTEXT);
+		APIGatewayV2HTTPResponse res = h.handleRequest(request("/terms"), TEST_CONTEXT);
 		assertEquals(200, res.getStatusCode());
 		assertTrue(res.getBody().contains("Terms of Service"));
 	}
@@ -111,7 +121,7 @@ public class MainHandlerTest {
 	@DisplayName("Unknown path returns 404")
 	void unknownPath() {
 		MainHandler h = newHandler();
-		APIGatewayProxyResponseEvent res = h.handleRequest(request("/does-not-exist"), TEST_CONTEXT);
+		APIGatewayV2HTTPResponse res = h.handleRequest(request("/does-not-exist"), TEST_CONTEXT);
 		assertEquals(404, res.getStatusCode());
 	}
 
@@ -124,7 +134,7 @@ public class MainHandlerTest {
 		System.clearProperty("zone.realfood.google.redirectUri");
 
 		MainHandler h = newHandler();
-		APIGatewayProxyResponseEvent res = h.handleRequest(request("/auth/google"), TEST_CONTEXT);
+		APIGatewayV2HTTPResponse res = h.handleRequest(request("/auth/google"), TEST_CONTEXT);
 		assertEquals(500, res.getStatusCode());
 		assertTrue(res.getBody().contains("Google OAuth is not configured"));
 	}
@@ -138,13 +148,13 @@ public class MainHandlerTest {
 		System.setProperty("zone.realfood.google.redirectUri", "https://example.com/callback");
 
 		MainHandler h = newHandler();
-		APIGatewayProxyResponseEvent res = h.handleRequest(request("/auth/google"), TEST_CONTEXT);
+		APIGatewayV2HTTPResponse res = h.handleRequest(request("/auth/google"), TEST_CONTEXT);
 		assertEquals(302, res.getStatusCode());
-		String location = res.getMultiValueHeaders().get("Location").get(0);
+		String location = res.getHeaders().get("Location");
 		assertNotNull(location);
 		assertTrue(location.startsWith("https://accounts.google.com/o/oauth2"), "Should redirect to Google auth domain");
-		assertNotNull(res.getMultiValueHeaders());
-		assertTrue(res.getMultiValueHeaders().get("Set-Cookie").stream().anyMatch(c -> c.startsWith("g_state=")), "State cookie should be set");
+		assertNotNull(res.getCookies());
+		assertTrue(res.getCookies().stream().anyMatch(c -> c.startsWith("g_state=")), "State cookie should be set");
 	}
 
 	@Test
@@ -156,14 +166,14 @@ public class MainHandlerTest {
 		System.setProperty("zone.realfood.google.redirectUri", "https://example.com/callback");
 
 		MainHandler h = newHandler();
-		APIGatewayProxyRequestEvent req = request("/auth/google/callback");
+		APIGatewayV2HTTPEvent req = request("/auth/google/callback");
 		Map<String, String> query = new HashMap<>();
 		query.put("code", "dummyCode");
 		query.put("state", "STATE_FROM_QUERY");
 		req.setQueryStringParameters(query);
 		// Intentionally no matching g_state cookie
 		req.setHeaders(Map.of());
-		APIGatewayProxyResponseEvent res = h.handleRequest(req, TEST_CONTEXT);
+		APIGatewayV2HTTPResponse res = h.handleRequest(req, TEST_CONTEXT);
 		assertEquals(400, res.getStatusCode());
 		assertTrue(res.getBody().contains("Invalid OAuth state"));
 	}

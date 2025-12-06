@@ -9,8 +9,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent.RequestContext;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent.RequestContext.Http;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 import com.sun.net.httpserver.HttpServer;
 
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -72,13 +74,18 @@ public class Main {
                 String requestBody = requestBodyBytes.length == 0 ? null : new String(requestBodyBytes, StandardCharsets.UTF_8);
                 System.out.println("Body: " + requestBody);
 
-                APIGatewayProxyRequestEvent requestEvent = new APIGatewayProxyRequestEvent().withHttpMethod(method).withBody(requestBody)
-                        .withMultiValueHeaders(headers).withPath(path).withQueryStringParameters(query);
+                APIGatewayV2HTTPEvent requestEvent = toHttpApiEvent(method, path, query, headers, requestBody);
 
-                APIGatewayProxyResponseEvent responseEvent = handler.handleRequest(requestEvent, null);
+                APIGatewayV2HTTPResponse responseEvent = handler.handleRequest(requestEvent, null);
 
-                exchange.getResponseHeaders().putAll(responseEvent.getMultiValueHeaders());
-                byte[] body = responseEvent.getBody().getBytes(StandardCharsets.UTF_8);
+                if (responseEvent.getHeaders() != null) {
+                    responseEvent.getHeaders().forEach((k, v) -> exchange.getResponseHeaders().put(k, List.of(v)));
+                }
+                if (responseEvent.getCookies() != null && !responseEvent.getCookies().isEmpty()) {
+                    exchange.getResponseHeaders().put("Set-Cookie", responseEvent.getCookies());
+                }
+
+                byte[] body = responseEvent.getBody() == null ? new byte[0] : responseEvent.getBody().getBytes(StandardCharsets.UTF_8);
                 exchange.sendResponseHeaders(responseEvent.getStatusCode(), body.length);
                 if (body.length > 0) {
                     exchange.getResponseBody().write(body);
@@ -149,5 +156,38 @@ public class Main {
             }
         }
         return map;
+    }
+
+    private static APIGatewayV2HTTPEvent toHttpApiEvent(String method, String path, Map<String, String> query,
+            Map<String, List<String>> headers, String body) {
+        APIGatewayV2HTTPEvent event = new APIGatewayV2HTTPEvent();
+        event.setRawPath(path);
+        event.setQueryStringParameters(query);
+        event.setBody(body);
+
+        Map<String, String> flatHeaders = new HashMap<>();
+        if (headers != null) {
+            headers.forEach((k, v) -> {
+                if (v != null && !v.isEmpty()) {
+                    flatHeaders.put(k, v.get(0));
+                }
+            });
+
+            // If cookies arrive in the standard header, also populate cookies list
+            List<String> cookieHeader = headers.get("Cookie");
+            if (cookieHeader != null && !cookieHeader.isEmpty()) {
+                flatHeaders.put("Cookie", cookieHeader.get(0));
+                event.setCookies(List.of(cookieHeader.get(0)));
+            }
+        }
+        event.setHeaders(flatHeaders);
+
+        RequestContext rc = new RequestContext();
+        Http http = new Http();
+        http.setMethod(method);
+        http.setPath(path);
+        rc.setHttp(http);
+        event.setRequestContext(rc);
+        return event;
     }
 }

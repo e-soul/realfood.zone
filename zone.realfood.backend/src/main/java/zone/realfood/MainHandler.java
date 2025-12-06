@@ -9,15 +9,15 @@ import java.util.Map;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import zone.realfood.db.DynamoDbTools;
 
-public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+public class MainHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
 
     private static final TemplateEngine templateEngine = TemplateEngine.createPrecompiled(ContentType.Html);
 
@@ -38,18 +38,22 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
     }
 
     @Override
-    public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent input, Context context) {
-        String path = input.getPath() == null ? "/" : input.getPath();
-        String method = input.getHttpMethod() == null ? "GET" : input.getHttpMethod().toUpperCase();
+    public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent input, Context context) {
+        if (input == null) {
+            return html(400, "Bad request");
+        }
+
+        String path = input.getRawPath() == null ? "/" : input.getRawPath();
+        String method = input.getRequestContext() != null && input.getRequestContext().getHttp() != null
+                && input.getRequestContext().getHttp().getMethod() != null
+                        ? input.getRequestContext().getHttp().getMethod().toUpperCase()
+                        : "GET";
         Map<String, String> query = input.getQueryStringParameters();
-        Map<String, String> headers = new HashMap<>();
-        Map<String, List<String>> multiValueHeaders = input.getMultiValueHeaders();
-        if (multiValueHeaders != null) {
-            for (Map.Entry<String, List<String>> entry : multiValueHeaders.entrySet()) {
-                if (entry.getValue() != null && !entry.getValue().isEmpty()) {
-                    headers.put(entry.getKey(), entry.getValue().get(0));
-                }
-            }
+        Map<String, String> headers = input.getHeaders() == null ? new HashMap<>() : new HashMap<>(input.getHeaders());
+
+        List<String> cookies = input.getCookies();
+        if ((cookies != null && !cookies.isEmpty()) && !headers.containsKey("Cookie")) {
+            headers.put("Cookie", String.join("; ", cookies));
         }
 
         if ("/".equals(path)) {
@@ -141,18 +145,17 @@ public class MainHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
         return html(404, "Not found");
     }
 
-    private static APIGatewayProxyResponseEvent html(int status, String body) {
-        return new APIGatewayProxyResponseEvent().withStatusCode(status).withMultiValueHeaders(Map.of("Content-Type", List.of("text/html; charset=utf-8")))
-                .withBody(body);
+    private static APIGatewayV2HTTPResponse html(int status, String body) {
+        return APIGatewayV2HTTPResponse.builder().withStatusCode(status).withHeaders(Map.of("Content-Type", "text/html; charset=utf-8"))
+                .withBody(body).build();
     }
 
-    private static APIGatewayProxyResponseEvent redirect(String location, String... cookies) {
-        Map<String, List<String>> headers = new HashMap<>();
-        headers.put("Location", List.of(location));
-        if (cookies != null && cookies.length > 0) {
-            headers.put("Set-Cookie", Arrays.asList(cookies));
-        }
-        return new APIGatewayProxyResponseEvent().withStatusCode(302).withMultiValueHeaders(headers).withBody("");
+    private static APIGatewayV2HTTPResponse redirect(String location, String... cookies) {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Location", location);
+        List<String> cookieList = cookies == null ? List.of() : Arrays.asList(cookies);
+        return APIGatewayV2HTTPResponse.builder().withStatusCode(302).withHeaders(headers).withCookies(cookieList).withBody("")
+                .build();
     }
 
     private static Map<String, String> parseForm(String body) {
