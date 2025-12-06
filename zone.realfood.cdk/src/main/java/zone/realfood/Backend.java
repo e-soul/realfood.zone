@@ -71,15 +71,25 @@ public class Backend extends Stack {
                                 .integrationType("AWS_PROXY").integrationMethod("POST").integrationUri(integrationUri)
                                 .payloadFormatVersion("2.0").build();
 
-                CfnRoute.Builder.create(this, "DefaultRoute").apiId(httpApi.getAttrApiId()).routeKey("$default")
-                                .target("integrations/" + integration.getRef()).build();
+                CfnRoute defaultRoute = CfnRoute.Builder.create(this, "DefaultRoute").apiId(httpApi.getAttrApiId()).routeKey("$default")
+                                .target("integrations/" + integration.getAttrIntegrationId()).build();
+                defaultRoute.addDependency(integration);
 
-                CfnStage.Builder.create(this, "DefaultStage").apiId(httpApi.getAttrApiId()).stageName("$default").autoDeploy(true)
+                CfnStage stage = CfnStage.Builder.create(this, "DefaultStage").apiId(httpApi.getAttrApiId()).stageName("$default").autoDeploy(true)
                                 .build();
+                stage.addDependency(defaultRoute);
+
+                // Use Fn.sub or direct ARN construction to ensure token resolution
+                String sourceArn = Stack.of(this).formatArn(software.amazon.awscdk.ArnComponents.builder()
+                                .service("execute-api")
+                                .resource(httpApi.getAttrApiId())
+                                .resourceName("*/*")
+                                .arnFormat(software.amazon.awscdk.ArnFormat.SLASH_RESOURCE_NAME)
+                                .build());
 
                 fn.addPermission("HttpApiInvokePermission",
-                                Permission.builder().principal(new ServicePrincipal("apigateway.amazonaws.com")).sourceArn(
-                                                String.format("arn:aws:execute-api:%s:%s:%s/*/*/*", region, account, httpApi.getAttrApiId()))
+                                Permission.builder().principal(new ServicePrincipal("apigateway.amazonaws.com"))
+                                                .sourceArn(sourceArn)
                                                 .build());
 
                 CfnDomainName domainName = CfnDomainName.Builder.create(this, "MainApiDomain").domainName(subdomain)
