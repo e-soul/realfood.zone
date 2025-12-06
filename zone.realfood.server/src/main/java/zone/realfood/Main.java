@@ -63,12 +63,14 @@ public class Main {
                 Map<String, String> query = parseQuery(requestUri);
                 Map<String, List<String>> headers = exchange.getRequestHeaders();
 
-                // Debug headers
+                System.out.println();
                 System.out.println("Request: " + path);
+                query.forEach((k, v) -> System.out.println("Query: " + k + "=" + v));
                 headers.forEach((k, v) -> System.out.println("Header: " + k + "=" + v));
 
                 byte[] requestBodyBytes = exchange.getRequestBody().readAllBytes();
                 String requestBody = requestBodyBytes.length == 0 ? null : new String(requestBodyBytes, StandardCharsets.UTF_8);
+                System.out.println("Body: " + requestBody);
 
                 APIGatewayProxyRequestEvent requestEvent = new APIGatewayProxyRequestEvent().withHttpMethod(method).withBody(requestBody)
                         .withMultiValueHeaders(headers).withPath(path).withQueryStringParameters(query);
