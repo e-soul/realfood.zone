@@ -99,8 +99,9 @@ public class Backend extends Stack {
                                 .build();
 
                 CfnApiMapping apiMapping = CfnApiMapping.Builder.create(this, "DefaultMapping").apiId(httpApi.getAttrApiId()).domainName(subdomain)
-                                .stage("$default").build();
+                                .stage(stage.getRef()).build();
                 apiMapping.addDependency(domainName);
+                apiMapping.addDependency(stage);
 
                 ARecord.Builder.create(this, "BetaApiAliasA").zone(zone).recordName("beta")
                                 .target(RecordTarget.fromAlias(new ApiGatewayv2DomainProperties(domainName.getAttrRegionalDomainName(),
