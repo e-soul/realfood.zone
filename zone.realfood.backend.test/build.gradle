@@ -1,25 +1,20 @@
-plugins {
-    id "java"
-}
-
-repositories {
-    mavenCentral()
-}
-
 dependencies {
-    implementation platform('software.amazon.awssdk:bom:2.25.66')
-    implementation 'software.amazon.awssdk:dynamodb'
-    implementation 'software.amazon.awssdk:regions'
-    implementation 'software.amazon.awssdk:dynamodb-enhanced'
+    implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
+    implementation "software.amazon.awssdk:dynamodb"
+    implementation "software.amazon.awssdk:dynamodb-enhanced"
+    implementation "software.amazon.awssdk:regions"
 
     testImplementation project(":zone.realfood.backend")
     testImplementation project(":zone.realfood.test.tools")
+
+    testImplementation "com.amazonaws:aws-lambda-java-core:${awsLambdaCoreVersion}"
+    testImplementation "com.amazonaws:aws-lambda-java-events:${awsLambdaEventsVersion}"
+
     testImplementation "org.junit.jupiter:junit-jupiter:${junitJupiterVersion}"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
 }
 
 test {
-    useJUnitPlatform()
     // Show standard output and errors from tests in the Gradle stdout
     testLogging {
         showStandardStreams = true

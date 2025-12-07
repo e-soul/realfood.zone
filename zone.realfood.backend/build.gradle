@@ -1,45 +1,45 @@
 plugins {
-  // Use java-library so that 'api' scoped dependencies are visible to dependent projects (e.g., zone.realfood.server)
-  id 'java-library'
-  id 'com.gradleup.shadow' version "9.0.2"
-  id 'gg.jte.gradle' version '3.2.1'
+    id "com.gradleup.shadow" version "9.3.0"
+    id "gg.jte.gradle" version "3.2.1"
 }
 
 dependencies {
-  api project(":zone.realfood.api")
+    implementation project(":zone.realfood.api")
 
-  // Expose libraries needed by downstream server code via 'api'
-  api 'com.amazonaws:aws-lambda-java-core:1.3.0'
-  api 'com.amazonaws:aws-lambda-java-events:3.16.1'
-  api platform('software.amazon.awssdk:bom:2.25.66')
-  api 'software.amazon.awssdk:dynamodb'
-  api 'software.amazon.awssdk:regions'
-  api 'software.amazon.awssdk:dynamodb-enhanced'
-  api 'gg.jte:jte:3.2.1'
-  
-  // Google OAuth library for secure authentication with JWT validation
-  api 'com.google.api-client:google-api-client:2.7.2'
-  
-  testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
+    implementation "com.amazonaws:aws-lambda-java-core:${awsLambdaCoreVersion}"
+    implementation "com.amazonaws:aws-lambda-java-events:${awsLambdaEventsVersion}"
+
+    implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
+    implementation "software.amazon.awssdk:dynamodb"
+    implementation "software.amazon.awssdk:dynamodb-enhanced"
+    implementation "software.amazon.awssdk:regions"
+
+    implementation "gg.jte:jte:${jteVersion}"
+
+    implementation "com.google.api-client:google-api-client:${googleApiClientVersion}"
+    
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitJupiterVersion}"
 }
 
 // Precompile jte templates during build, then bundle them into the fat jar
-jte { precompile() }
+jte {
+    precompile()
+}
 
 tasks.shadowJar {
-  // Use classifier to distinguish fat jar from thin jar (zone.realfood.backend-all.jar)
-  archiveClassifier.set('all')
-  mergeServiceFiles()
-  dependsOn tasks.precompileJte
-  from fileTree("jte-classes") {
-    include "**/*.class"
-    include "**/*.bin" // present only if binary templates enabled
-  }
+    // Use classifier to distinguish fat jar from thin jar (zone.realfood.backend-all.jar)
+    archiveClassifier.set("all")
+    mergeServiceFiles()
+    dependsOn tasks.precompileJte
+    from fileTree("jte-classes") {
+        include "**/*.class"
+        include "**/*.bin" // present only if binary templates enabled
+    }
 }
 
 // Also include jte-classes in the regular (thin) jar so tests and dependent modules can resolve templates
 tasks.jar {
-  // Safely include precompiled templates; rely on precompileJte having run
-  dependsOn tasks.precompileJte
-  from("$projectDir/jte-classes") { include "**/*.class"; include "**/*.bin" }
+    // Safely include precompiled templates; rely on precompileJte having run
+    dependsOn tasks.precompileJte
+    from("$projectDir/jte-classes") { include "**/*.class"; include "**/*.bin" }
 }

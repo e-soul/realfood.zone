@@ -1,8 +1,11 @@
-plugins {
-    id "java"
-}
-
 dependencies {
     implementation project(":zone.realfood.backend")
     implementation project(":zone.realfood.test.tools")
+
+    implementation "com.amazonaws:aws-lambda-java-core:${awsLambdaCoreVersion}"
+    implementation "com.amazonaws:aws-lambda-java-events:${awsLambdaEventsVersion}"
+
+    implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
+    implementation "software.amazon.awssdk:dynamodb"
+    implementation "software.amazon.awssdk:dynamodb-enhanced"
 }

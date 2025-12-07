@@ -1,16 +1,8 @@
-plugins {
-    id "java"
-}
-
-repositories {
-    mavenCentral()
-}
-
 dependencies {
-    implementation platform('software.amazon.awssdk:bom:2.25.66')
-    implementation 'software.amazon.awssdk:dynamodb'
-    implementation 'software.amazon.awssdk:regions'
-    implementation 'software.amazon.awssdk:dynamodb-enhanced'
-    
     implementation project(":zone.realfood.backend")
+
+    implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
+    implementation "software.amazon.awssdk:dynamodb"
+    implementation "software.amazon.awssdk:dynamodb-enhanced"
+    implementation "software.amazon.awssdk:regions"
 }
