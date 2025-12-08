@@ -29,7 +29,7 @@ public final class DynamoDbTools {
         if (null != endpointOverride) {
             clientBuilder = clientBuilder.endpointOverride(URI.create(endpointOverride));
         }
-        return clientBuilder.region(getRegion()).credentialsProvider(DefaultCredentialsProvider.create()).build();
+        return clientBuilder.region(getRegion()).credentialsProvider(DefaultCredentialsProvider.builder().build()).build();
     }
 
     public static String getUserProfileTableName() {
