@@ -3,6 +3,4 @@ dependencies {
 
     implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
     implementation "software.amazon.awssdk:dynamodb"
-    implementation "software.amazon.awssdk:dynamodb-enhanced"
-    implementation "software.amazon.awssdk:regions"
 }

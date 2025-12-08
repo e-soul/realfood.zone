@@ -1,28 +1,25 @@
 package zone.realfood;
 
-import java.util.List;
 import java.util.Map;
 
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.apigatewayv2.CfnApi;
-import software.amazon.awscdk.services.apigatewayv2.CfnApiMapping;
-import software.amazon.awscdk.services.apigatewayv2.CfnDomainName;
-import software.amazon.awscdk.services.apigatewayv2.CfnIntegration;
-import software.amazon.awscdk.services.apigatewayv2.CfnRoute;
-import software.amazon.awscdk.services.apigatewayv2.CfnStage;
+import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
+import software.amazon.awscdk.services.apigatewayv2.DomainMappingOptions;
+import software.amazon.awscdk.services.apigatewayv2.DomainName;
+import software.amazon.awscdk.services.apigatewayv2.EndpointType;
+import software.amazon.awscdk.services.apigatewayv2.HttpApi;
+import software.amazon.awscdk.services.apigatewayv2.SecurityPolicy;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
+import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.LogRetention;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.dynamodb.ITable;
-import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.IHostedZone;
@@ -45,76 +42,35 @@ public class Backend extends Stack {
                 String staticBaseUrl = String.format("https://%s.s3.%s.amazonaws.com", staticBucketName, region);
 
                 Function fn = Function.Builder.create(this, "MainFunction").runtime(Runtime.JAVA_21).architecture(Architecture.X86_64).memorySize(512)
-                                .timeout(Duration.seconds(10)).handler("zone.realfood.MainHandler::handleRequest")
-                                .code(Code.fromAsset(SHADOW_JAR_PATH))
-                                .environment(Map.of(
-                                        "STATIC_BASE_URL", staticBaseUrl,
-                                        "USER_PROFILE_TABLE", userProfileTable.getTableName(),
-                                        "GOOGLE_CLIENT_ID", System.getenv().getOrDefault("GOOGLE_CLIENT_ID", ""),
-                                        "GOOGLE_CLIENT_SECRET", System.getenv().getOrDefault("GOOGLE_CLIENT_SECRET", ""),
-                                        "GOOGLE_REDIRECT_URI", System.getenv().getOrDefault("GOOGLE_REDIRECT_URI", "")
-                                ))
+                                .timeout(Duration.seconds(10)).handler("zone.realfood.MainHandler::handleRequest").code(Code.fromAsset(SHADOW_JAR_PATH))
+                                .environment(Map.of("STATIC_BASE_URL", staticBaseUrl, "USER_PROFILE_TABLE", userProfileTable.getTableName(), "GOOGLE_CLIENT_ID",
+                                                System.getenv().getOrDefault("GOOGLE_CLIENT_ID", ""), "GOOGLE_CLIENT_SECRET",
+                                                System.getenv().getOrDefault("GOOGLE_CLIENT_SECRET", ""), "GOOGLE_REDIRECT_URI",
+                                                System.getenv().getOrDefault("GOOGLE_REDIRECT_URI", "")))
                                 .build();
 
-                // Allow the Lambda to read and write the user profile table (for sample seeding)
                 userProfileTable.grantReadWriteData(fn);
 
                 LogRetention.Builder.create(this, "MainFunctionLogRetention").logGroupName("/aws/lambda/" + fn.getFunctionName())
                                 .retention(RetentionDays.THREE_DAYS).build();
 
-                String integrationUri = String.format("arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations", region,
-                                fn.getFunctionArn());
+                // Create custom domain for the API
+                DomainName domainName = DomainName.Builder.create(this, "MainApiDomain").domainName(subdomain).certificate(certificate)
+                                .endpointType(EndpointType.REGIONAL).securityPolicy(SecurityPolicy.TLS_1_2).build();
 
-                CfnApi httpApi = CfnApi.Builder.create(this, "MainApi").name("MainApi").protocolType("HTTP").build();
+                // Create HTTP API with Lambda integration (L2 constructs handle permissions automatically)
+                HttpApi httpApi = HttpApi.Builder.create(this, "MainApi").apiName("MainApi")
+                                .defaultIntegration(new HttpLambdaIntegration("MainIntegration", fn))
+                                .defaultDomainMapping(DomainMappingOptions.builder().domainName(domainName).build()).build();
 
-                CfnIntegration integration = CfnIntegration.Builder.create(this, "MainIntegration").apiId(httpApi.getAttrApiId())
-                                .integrationType("AWS_PROXY").integrationMethod("POST").integrationUri(integrationUri)
-                                .payloadFormatVersion("2.0").build();
+                var domainProps = new ApiGatewayv2DomainProperties(domainName.getRegionalDomainName(), domainName.getRegionalHostedZoneId());
+                RecordTarget aliasTarget = RecordTarget.fromAlias(domainProps);
 
-                CfnRoute defaultRoute = CfnRoute.Builder.create(this, "DefaultRoute").apiId(httpApi.getAttrApiId()).routeKey("$default")
-                                .target("integrations/" + integration.getAttrIntegrationId()).build();
-                defaultRoute.addDependency(integration);
+                ARecord.Builder.create(this, "BetaApiAliasA").zone(zone).recordName("beta").target(aliasTarget).build();
 
-                CfnStage stage = CfnStage.Builder.create(this, "DefaultStage").apiId(httpApi.getAttrApiId()).stageName("$default").autoDeploy(true)
-                                .build();
-                stage.addDependency(defaultRoute);
+                AaaaRecord.Builder.create(this, "BetaApiAliasAAAA").zone(zone).recordName("beta").target(aliasTarget).build();
 
-                // Use Fn.sub or direct ARN construction to ensure token resolution
-                String sourceArn = Stack.of(this).formatArn(software.amazon.awscdk.ArnComponents.builder()
-                                .service("execute-api")
-                                .resource(httpApi.getAttrApiId())
-                                .resourceName("*/*")
-                                .arnFormat(software.amazon.awscdk.ArnFormat.SLASH_RESOURCE_NAME)
-                                .build());
-
-                fn.addPermission("HttpApiInvokePermission",
-                                Permission.builder().principal(new ServicePrincipal("apigateway.amazonaws.com"))
-                                                .sourceArn(sourceArn)
-                                                .build());
-
-                CfnDomainName domainName = CfnDomainName.Builder.create(this, "MainApiDomain").domainName(subdomain)
-                                .domainNameConfigurations(List.of(CfnDomainName.DomainNameConfigurationProperty.builder()
-                                                .certificateArn(certificate.getCertificateArn()).endpointType("REGIONAL")
-                                                .securityPolicy("TLS_1_2").build()))
-                                .build();
-
-                CfnApiMapping apiMapping = CfnApiMapping.Builder.create(this, "DefaultMapping").apiId(httpApi.getAttrApiId()).domainName(subdomain)
-                                .stage(stage.getRef()).build();
-                apiMapping.addDependency(domainName);
-                apiMapping.addDependency(stage);
-
-                ARecord.Builder.create(this, "BetaApiAliasA").zone(zone).recordName("beta")
-                                .target(RecordTarget.fromAlias(new ApiGatewayv2DomainProperties(domainName.getAttrRegionalDomainName(),
-                                                domainName.getAttrRegionalHostedZoneId())))
-                                .build();
-
-                AaaaRecord.Builder.create(this, "BetaApiAliasAAAA").zone(zone).recordName("beta")
-                                .target(RecordTarget.fromAlias(new ApiGatewayv2DomainProperties(domainName.getAttrRegionalDomainName(),
-                                                domainName.getAttrRegionalHostedZoneId())))
-                                .build();
-
-                CfnOutput.Builder.create(this, "ApiInvokeUrl").value(httpApi.getAttrApiEndpoint())
-                                .description("Default execute-api URL (HTTP API v2)").build();
+                CfnOutput.Builder.create(this, "ApiInvokeUrl").value(httpApi.getApiEndpoint()).description("Default execute-api URL (HTTP API v2)").build();
 
                 CfnOutput.Builder.create(this, "CustomDomainUrl").value("https://" + subdomain + "/")
                                 .description("Custom domain for the API (REGIONAL, root path)").build();
